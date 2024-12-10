@@ -21,6 +21,18 @@
       <UniqueIdentifier>{639EADAA-A684-42e4-A9AD-28FC9BCB8F7C}</UniqueIdentifier>
       <Extensions>ts</Extensions>
     </Filter>
+    <Filter Include="Cef">
+      <UniqueIdentifier>{f9152fe9-e2ee-4a13-9cf6-96fe741a25fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Util">
+      <UniqueIdentifier>{d9190a16-c5b1-4db9-b18c-0d25c00a850d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="WebSocket">
+      <UniqueIdentifier>{685c7eda-003c-417e-b75f-f9b9f49462fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Type">
+      <UniqueIdentifier>{625af062-7369-42e3-862c-7d9cb235ce75}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="Twisting.qrc">
@@ -40,30 +52,39 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ToolDefine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CefViewWidget.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Cef</Filter>
     </ClCompile>
     <ClCompile Include="DownloadManager.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Cef</Filter>
+    </ClCompile>
+    <ClCompile Include="ToolDefine.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="wsmsgdispatcher.cpp">
+      <Filter>WebSocket</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="dumpfile.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="DownloadManager.h">
+      <Filter>Cef</Filter>
     </ClInclude>
     <ClInclude Include="ToolDefine.h">
-      <Filter>Header Files</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
-    <ClInclude Include="DownloadManager.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="dumpfile.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="DataDefine.h">
+      <Filter>Type</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="CefViewWidget.h">
-      <Filter>Header Files</Filter>
+      <Filter>Cef</Filter>
+    </QtMoc>
+    <QtMoc Include="wsmsgdispatcher.h">
+      <Filter>WebSocket</Filter>
     </QtMoc>
   </ItemGroup>
 </Project>

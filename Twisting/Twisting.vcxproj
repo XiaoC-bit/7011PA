@@ -107,6 +107,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="wsmsgdispatcher.cpp" />
     <QtRcc Include="Twisting.qrc" />
     <QtUic Include="Twisting.ui" />
     <QtMoc Include="Twisting.h" />
@@ -117,7 +118,9 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DataDefine.h" />
     <ClInclude Include="DownloadManager.h" />
+    <QtMoc Include="wsmsgdispatcher.h" />
     <QtMoc Include="CefViewWidget.h" />
     <ClInclude Include="dumpfile.h" />
     <ClInclude Include="ToolDefine.h" />

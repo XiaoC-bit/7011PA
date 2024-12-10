@@ -11,7 +11,9 @@
 #include <qsettings.h>
 #include <tlhelp32.h>
 #include <tlhelp32.h>
+
 #include "dumpfile.h"
+#include "DataDefine.h"
 
 
 bool terminateProcessByName(const std::string& processName) {
@@ -110,6 +112,8 @@ bool gDebug = true;
 bool gDebug = false;
 #endif
 
+Config gConfig;
+
 int main(int argc, char *argv[])
 {
 #if (QT_VERSION <= QT_VERSION_CHECK(6, 0, 0))
@@ -134,10 +138,14 @@ int main(int argc, char *argv[])
 	if (!QFile::exists(iniFile)) {
 		settings.setValue("System/DebugPort", 28001);
 		settings.setValue("System/FrontExe", "gotechHttp.exe");
+		settings.setValue("System/WebSocketPort", 20203);
+		settings.setValue("System/FrontPort", 7779);
 		settings.sync();
 	}
-	int debugPort = settings.value("System/DebugPort", "QC").toInt();
-	QString frontExe = settings.value("System/FrontExe", "QC").toString();
+	gConfig.debugPort = settings.value("System/DebugPort", 28001).toInt();
+	gConfig.webSocketPort = settings.value("System/WebSocketPort", 20203).toInt();
+	gConfig.frontPort = settings.value("System/FrontPort", 7779).toInt();	
+	gConfig.frontExeName = settings.value("System/FrontExe", "gotechHttp.exe").toString();
 
 	// build QCefConfig
 	QCefConfig config;
@@ -148,7 +156,7 @@ int main(int argc, char *argv[])
 	// set JSBridge object name (default value is QCefViewClient)
 	config.setBridgeObjectName("CallBridge");
 	// port for remote debugging (default is 0 and means to disable remote debugging)
-	config.setRemoteDebuggingPort(debugPort);
+	config.setRemoteDebuggingPort(gConfig.debugPort);
 	// set background color for all browsers
 	// (QCefSetting.setBackgroundColor will overwrite this value for specified browser instance)
 	config.setBackgroundColor(Qt::lightGray);
@@ -186,12 +194,12 @@ int main(int argc, char *argv[])
 
 
 
-	QString pyHttpExe = dir.filePath(QString("FrontEnv/%1").arg(frontExe));
+	QString pyHttpExe = dir.filePath(QString("FrontEnv/%1").arg(gConfig.frontExeName));
 	program.setWorkingDirectory(dir.filePath("FrontEnv/"));
 	//args.append("-h");
 	if (!gDebug) {
 		while (1) {
-			if (!terminateProcessByName(frontExe.toStdString()))
+			if (!terminateProcessByName(gConfig.frontExeName.toStdString()))
 				break;
 		}
 		program.start(pyHttpExe, args);

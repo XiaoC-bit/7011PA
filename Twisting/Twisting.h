@@ -5,6 +5,7 @@
 #include <memory>
 
 class QCefView;
+class WsMsgDispatcher;
 class Twisting : public QMainWindow
 {
     Q_OBJECT
@@ -20,4 +21,15 @@ private:
      * 浏览器.
      */
     std::unique_ptr < QCefView> cefViewWidget_ = nullptr;
+    
+
+    /**
+     * WebSocket前端通讯模块.
+     */
+    WsMsgDispatcher* wsDispatcher_ = nullptr;
+
+    /**
+     * Websocket线程，避免阻塞UI主线程.
+     */
+    QThread* wsThread_ = nullptr;
 };
