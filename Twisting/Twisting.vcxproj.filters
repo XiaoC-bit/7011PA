@@ -100,6 +100,9 @@
     <ClCompile Include="MethodHandler.cpp">
       <Filter>Data\Config</Filter>
     </ClCompile>
+    <ClCompile Include="ReportSettingHandler.cpp">
+      <Filter>Data\Config</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DownloadManager.h">
@@ -141,6 +144,9 @@
       <Filter>U70\Channel</Filter>
     </QtMoc>
     <QtMoc Include="MethodHandler.h">
+      <Filter>Data\Config</Filter>
+    </QtMoc>
+    <QtMoc Include="ReportSettingHandler.h">
       <Filter>Data\Config</Filter>
     </QtMoc>
   </ItemGroup>

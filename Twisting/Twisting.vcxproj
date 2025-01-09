@@ -114,6 +114,7 @@
     <ClCompile Include="MsgHandler.cpp" />
     <ClCompile Include="MultiMachDispatcher.cpp" />
     <ClCompile Include="NormalCommHandler.cpp" />
+    <ClCompile Include="ReportSettingHandler.cpp" />
     <ClCompile Include="wsmsgdispatcher.cpp" />
     <QtRcc Include="Twisting.qrc" />
     <QtUic Include="Twisting.ui" />
@@ -137,6 +138,7 @@
     <QtMoc Include="MsgHandler.h" />
     <QtMoc Include="NormalCommHandler.h" />
     <QtMoc Include="MethodHandler.h" />
+    <QtMoc Include="ReportSettingHandler.h" />
     <ClInclude Include="ToolDefine.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
