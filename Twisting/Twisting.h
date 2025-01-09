@@ -3,6 +3,7 @@
 #include <QtWidgets/QMainWindow>
 #include "ui_Twisting.h"
 #include <memory>
+#include "MultiMachDispatcher.h"
 
 class QCefView;
 class WsMsgDispatcher;
@@ -15,6 +16,12 @@ public:
     ~Twisting();
 
 private:
+    /**
+     * 信号槽初始化.
+     * 
+     */
+    void signalInit();
+
     Ui::TwistingClass ui;
 
     /**
@@ -32,4 +39,8 @@ private:
      * Websocket线程，避免阻塞UI主线程.
      */
     QThread* wsThread_ = nullptr;
+
+
+
+    MultiMachDispatcher agent_;
 };

@@ -113,6 +113,7 @@ bool gDebug = false;
 #endif
 
 Config gConfig;
+QString gSqlType = "SqlLite";
 
 int main(int argc, char *argv[])
 {

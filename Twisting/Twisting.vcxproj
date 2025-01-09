@@ -107,6 +107,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CommHandler.cpp" />
+    <ClCompile Include="CommunicationThread.cpp" />
+    <ClCompile Include="DataProcessor.cpp" />
+    <ClCompile Include="MethodHandler.cpp" />
+    <ClCompile Include="MsgHandler.cpp" />
+    <ClCompile Include="MultiMachDispatcher.cpp" />
+    <ClCompile Include="NormalCommHandler.cpp" />
     <ClCompile Include="wsmsgdispatcher.cpp" />
     <QtRcc Include="Twisting.qrc" />
     <QtUic Include="Twisting.ui" />
@@ -118,11 +125,18 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="CommunicationThread.h" />
+    <QtMoc Include="CommHandler.h" />
     <ClInclude Include="DataDefine.h" />
+    <QtMoc Include="DataProcessor.h" />
     <ClInclude Include="DownloadManager.h" />
     <QtMoc Include="wsmsgdispatcher.h" />
     <QtMoc Include="CefViewWidget.h" />
     <ClInclude Include="dumpfile.h" />
+    <QtMoc Include="MultiMachDispatcher.h" />
+    <QtMoc Include="MsgHandler.h" />
+    <QtMoc Include="NormalCommHandler.h" />
+    <QtMoc Include="MethodHandler.h" />
     <ClInclude Include="ToolDefine.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

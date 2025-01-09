@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "*.qss": "css",
+        "*.bfunction": "json",
+        "*.bprogram": "json",
+        "*.xot": "json",
+        "*.vision": "json",
+        "*.bp": "json",
+        "*.function": "json",
+        "*.struct": "json",
+        "format": "cpp"
+    }
+}

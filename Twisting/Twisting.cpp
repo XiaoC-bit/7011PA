@@ -27,7 +27,18 @@ Twisting::Twisting(QWidget *parent)
 	wsDispatcher_->moveToThread(wsThread_);//放到后台线程，避免阻塞UI线程
 	wsThread_->start();
 
-	if (!gDebug) {
+	signalInit();
+
+	if (gDebug) {
+		QCefSetting setting;
+		//QString uri = QString("http://localhost:%1").arg(gConfig.frontPort);
+		QString uri = QString("https://www.baidu.com").arg(gConfig.frontPort);
+		cefViewWidget_ = std::unique_ptr< QCefView>(new CefViewWidget(uri, &setting, this));
+		this->setCentralWidget(cefViewWidget_.get());
+		this->setMinimumWidth(10);
+		this->setMinimumHeight(10);
+	}
+	else {
 		QCefSetting setting;
 		QString uri = QString("http://localhost:%1").arg(gConfig.frontPort);
 		cefViewWidget_ = std::unique_ptr< QCefView>(new CefViewWidget(uri, &setting, this));
@@ -35,31 +46,30 @@ Twisting::Twisting(QWidget *parent)
 		this->setMinimumWidth(minWidth);
 		this->setMinimumHeight(minHeigth);
 	}
-	else {
-		this->setMinimumWidth(10);
-		this->setMinimumHeight(10);
-		////测试使用
-		QPushButton* button = new QPushButton("start");
-		//QPushButton* button1 = new QPushButton("stop");
-		//QPushButton* button2 = new QPushButton("send");
-		//// 创建垂直布局
-		QVBoxLayout* layout = new QVBoxLayout;
-		//// 将按钮添加到布局中
-		layout->addWidget(button);
-		//layout->addWidget(button1);
-		//layout->addWidget(button2);
-		//// 创建一个 QWidget 作为布局的容器
-		QWidget* widget = new QWidget;
-		//// 将布局设置给 QWidget
-		widget->setLayout(layout);
-		//// 将 QWidget 设置为 QMainWindow 的中央窗口部件
-		setCentralWidget(widget);
-		//// 连接按钮的 clicked 信号到槽函数
-	}
 
 }
 
 Twisting::~Twisting()
 {
 	cefViewWidget_ = nullptr;
+	wsDispatcher_->deleteLater();
+	if (wsThread_) {
+		wsThread_->quit();
+		wsThread_->deleteLater();
+	}
+}
+
+
+void Twisting::signalInit(){
+
+	//WS消息，关联至设备通讯线程
+	connect(wsDispatcher_, &WsMsgDispatcher::requestMach, &agent_, &MultiMachDispatcher::handleWSMachReq);
+	connect(&agent_, &MultiMachDispatcher::wsResponse, wsDispatcher_, &WsMsgDispatcher::responseToWs);
+
+
+
+	//WS消息，关联至数据处理器
+	connect(wsDispatcher_, &WsMsgDispatcher::requestProcessor, &agent_, &MultiMachDispatcher::handleWSMsg);
+	//数据处理器处理后，回送消息到WS发送出去
+	connect(&agent_, &MultiMachDispatcher::fireEvent, wsDispatcher_, &WsMsgDispatcher::fireEvent);
 }

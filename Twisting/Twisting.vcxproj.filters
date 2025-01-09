@@ -33,6 +33,21 @@
     <Filter Include="Type">
       <UniqueIdentifier>{625af062-7369-42e3-862c-7d9cb235ce75}</UniqueIdentifier>
     </Filter>
+    <Filter Include="U70">
+      <UniqueIdentifier>{183e4579-b74b-4803-a506-9f02d3613c82}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dispatch">
+      <UniqueIdentifier>{14afc74a-fbca-4aca-b346-a551d36b9309}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data">
+      <UniqueIdentifier>{40172a0b-3543-4fe2-bd70-89b8f7506f3e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="U70\Channel">
+      <UniqueIdentifier>{de87ee76-070b-41d8-a871-1c09f2ed73f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\Config">
+      <UniqueIdentifier>{59c97c5d-c945-476f-8145-ff50b9bb1edd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="Twisting.qrc">
@@ -64,6 +79,27 @@
     <ClCompile Include="wsmsgdispatcher.cpp">
       <Filter>WebSocket</Filter>
     </ClCompile>
+    <ClCompile Include="CommunicationThread.cpp">
+      <Filter>U70</Filter>
+    </ClCompile>
+    <ClCompile Include="CommHandler.cpp">
+      <Filter>U70</Filter>
+    </ClCompile>
+    <ClCompile Include="MultiMachDispatcher.cpp">
+      <Filter>Dispatch</Filter>
+    </ClCompile>
+    <ClCompile Include="MsgHandler.cpp">
+      <Filter>Dispatch</Filter>
+    </ClCompile>
+    <ClCompile Include="DataProcessor.cpp">
+      <Filter>Data</Filter>
+    </ClCompile>
+    <ClCompile Include="NormalCommHandler.cpp">
+      <Filter>U70\Channel</Filter>
+    </ClCompile>
+    <ClCompile Include="MethodHandler.cpp">
+      <Filter>Data\Config</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DownloadManager.h">
@@ -85,6 +121,27 @@
     </QtMoc>
     <QtMoc Include="wsmsgdispatcher.h">
       <Filter>WebSocket</Filter>
+    </QtMoc>
+    <QtMoc Include="CommunicationThread.h">
+      <Filter>U70</Filter>
+    </QtMoc>
+    <QtMoc Include="CommHandler.h">
+      <Filter>U70</Filter>
+    </QtMoc>
+    <QtMoc Include="MultiMachDispatcher.h">
+      <Filter>Dispatch</Filter>
+    </QtMoc>
+    <QtMoc Include="MsgHandler.h">
+      <Filter>Dispatch</Filter>
+    </QtMoc>
+    <QtMoc Include="DataProcessor.h">
+      <Filter>Data</Filter>
+    </QtMoc>
+    <QtMoc Include="NormalCommHandler.h">
+      <Filter>U70\Channel</Filter>
+    </QtMoc>
+    <QtMoc Include="MethodHandler.h">
+      <Filter>Data\Config</Filter>
     </QtMoc>
   </ItemGroup>
 </Project>
