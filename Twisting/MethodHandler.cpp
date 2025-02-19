@@ -62,6 +62,25 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
         return false;
     }
     specimenName = testModeConfig["specimenName"].toString();
+
+
+    QString specimenNumber;
+    if (testModeConfig["specimenNumber"].isNull())
+    {
+        qDebug() << "specimenNumber error";
+        return false;
+    }
+    specimenNumber = testModeConfig["specimenNumber"].toString();
+
+
+    QString remarks;
+    if (testModeConfig["remarks"].isNull())
+    {
+        qDebug() << "remarks error";
+        return false;
+    }
+    remarks = testModeConfig["remarks"].toString();
+
     QString batchNumber = "";
     if (testModeConfig["batchNumber"].isNull())
     {
@@ -316,8 +335,8 @@ specimen_name,batch_number,production_date,operator,lab_temperature,\
 lab_humidity,mode,torsion_speed,torsion_unit,initial_load_torque,\
 initial_load_angle,initial_load_displacement,start_point,end_condition,\
 max_torque,max_angle,break_sensitivity,move_speed,static_mode,\
-constant_angle,constant_torque,cycle_count,dynamic_mode,torsion_frequency,step_time) values('%1','%2','%3','%4','%5','%6',%7,%8,\
-'%9',%10,'%11',%12,%13,%14,%15,%16,%17,%18,%19,%20,'%21',%22,%23,%24,'%25',%26,%27)")
+constant_angle,constant_torque,cycle_count,dynamic_mode,torsion_frequency,step_time,specimen_number,remarks) values('%1','%2','%3','%4','%5','%6',%7,%8,\
+'%9',%10,'%11',%12,%13,%14,%15,%16,%17,%18,%19,%20,'%21',%22,%23,%24,'%25',%26,%27,'%28','%29')")
                  .arg(methodName)
                  .arg(methodRemark)
                  .arg(specimenName)
@@ -343,8 +362,10 @@ constant_angle,constant_torque,cycle_count,dynamic_mode,torsion_frequency,step_t
                  .arg(constantTorque)
                  .arg(cycleCount)
                  .arg(dynamicMode)
-                 .arg(torsionFrequency)
-                 .arg(stepTime);
+        .arg(torsionFrequency)
+        .arg(stepTime)
+        .arg(specimenNumber)
+        .arg(remarks);
     if (!query.exec(strSql))
     {
         qDebug() << "Failed to fetch data:";

@@ -7,12 +7,14 @@
 #include <qnetworkproxy.h>
 
 #include "NormalCommHandler.h"
+#include "ControlTestCommHandler.h"
 
 
 CommunicationThread::CommunicationThread(QObject* parent) : QThread(parent), m_socket(nullptr), m_sendTimer(nullptr), recNum1_(0), powerOn_(true)
 {
 
 	commHandlers_["normal-message"] = new NormalCommHandler(u65Info, this);//常规通讯
+	commHandlers_["control-message"] = new ControlTestCommHandler(u65Info, this);//常规通讯
 
 	useRealTime_ = false;
 
@@ -600,6 +602,14 @@ void CommunicationThread::timerFunc()
 		obj["sDoubleQuotation"] = 10;
 		obj["upperTemp"] = 10;
 		obj["lowerTemp"] = 10;
+
+		obj["torque"] = 1.1;//扭转机  扭矩
+		obj["angle"] = 2.2;//扭转机  扭矩
+		obj["axialDisplacement"] = 3.3;//扭转机  轴向位移
+
+		obj["twistCount"] = 4;//扭转机  轴向位移
+		obj["testTimer"] = 3389;//扭转机  轴向位移
+		
 #else
 		obj["connectErr"] = true;
 #endif

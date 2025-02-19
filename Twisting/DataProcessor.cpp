@@ -12,6 +12,7 @@
 
 #include "MethodHandler.h"
 #include "ReportSettingHandler.h"
+#include "SystemConfigHandler.h"
 
 extern QString gSqlType;
 
@@ -44,6 +45,7 @@ DataProcessor::DataProcessor(QObject* parent, int deviceId)
 	//配置前端WS消息的通道处理器
 	handlers_["config-method-message"] = std::shared_ptr<MethodHandler>(new MethodHandler(this));
 	handlers_["config-report-message"] = std::shared_ptr<ReportSettingHandler>(new ReportSettingHandler(this));
+	handlers_["config-system-message"] = std::shared_ptr<SystemConfigHandler>(new SystemConfigHandler(this));
 	
 	//类内部使用
 	handlers_["__"] = std::shared_ptr<MsgHandler>(new MsgHandler(this));

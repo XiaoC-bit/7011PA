@@ -109,12 +109,14 @@
   <ItemGroup>
     <ClCompile Include="CommHandler.cpp" />
     <ClCompile Include="CommunicationThread.cpp" />
+    <ClCompile Include="ControlTestCommHandler.cpp" />
     <ClCompile Include="DataProcessor.cpp" />
     <ClCompile Include="MethodHandler.cpp" />
     <ClCompile Include="MsgHandler.cpp" />
     <ClCompile Include="MultiMachDispatcher.cpp" />
     <ClCompile Include="NormalCommHandler.cpp" />
     <ClCompile Include="ReportSettingHandler.cpp" />
+    <ClCompile Include="SystemConfigHandler.cpp" />
     <ClCompile Include="wsmsgdispatcher.cpp" />
     <QtRcc Include="Twisting.qrc" />
     <QtUic Include="Twisting.ui" />
@@ -128,6 +130,7 @@
   <ItemGroup>
     <QtMoc Include="CommunicationThread.h" />
     <QtMoc Include="CommHandler.h" />
+    <QtMoc Include="ControlTestCommHandler.h" />
     <ClInclude Include="DataDefine.h" />
     <QtMoc Include="DataProcessor.h" />
     <ClInclude Include="DownloadManager.h" />
@@ -139,6 +142,7 @@
     <QtMoc Include="NormalCommHandler.h" />
     <QtMoc Include="MethodHandler.h" />
     <QtMoc Include="ReportSettingHandler.h" />
+    <QtMoc Include="SystemConfigHandler.h" />
     <ClInclude Include="ToolDefine.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -103,6 +103,12 @@
     <ClCompile Include="ReportSettingHandler.cpp">
       <Filter>Data\Config</Filter>
     </ClCompile>
+    <ClCompile Include="SystemConfigHandler.cpp">
+      <Filter>Data\Config</Filter>
+    </ClCompile>
+    <ClCompile Include="ControlTestCommHandler.cpp">
+      <Filter>U70\Channel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DownloadManager.h">
@@ -148,6 +154,12 @@
     </QtMoc>
     <QtMoc Include="ReportSettingHandler.h">
       <Filter>Data\Config</Filter>
+    </QtMoc>
+    <QtMoc Include="SystemConfigHandler.h">
+      <Filter>Data\Config</Filter>
+    </QtMoc>
+    <QtMoc Include="ControlTestCommHandler.h">
+      <Filter>U70\Channel</Filter>
     </QtMoc>
   </ItemGroup>
 </Project>

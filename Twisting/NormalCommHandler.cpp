@@ -68,7 +68,11 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 	U65Info_.U65_MODE = (recvData[12 + 0x18] & 0xff) + (recvData[12 + 0x19] & 0xff) * 0x100;
 	U65Info_.U65_MSG = (recvData[12 + 0x1a] & 0xff) + (recvData[12 + 0x1b] & 0xff) * 0x100;
 	U65Info_.U65_MSG2 = (recvData[12 + 0x1c] & 0xff) + (recvData[12 + 0x1d] & 0xff) * 0x100;
-	U65Info_.U65_MSG3 = (recvData[12 + 0x20] & 0xff) + (recvData[12 + 0x21] & 0xff) * 0x100 + (recvData[12 + 0x22] & 0xff) * 0x10000 + (recvData[12 + 0x23] & 0xff) * 0x1000000;
+	U65Info_.U65_MSG3 = (recvData[12 + 0x20] & 0xff) + 
+						(recvData[12 + 0x21] & 0xff) * 0x100 + 
+						(recvData[12 + 0x22] & 0xff) * 0x10000 + 
+						(recvData[12 + 0x23] & 0xff) * 0x1000000;
+
 
 	obj["U65_MODE"] = U65Info_.U65_MODE;
 	obj["U65_MSG"] = U65Info_.U65_MSG;
@@ -93,6 +97,29 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 	float* pHex32 = (float*)&Hex32;
 	U65Info_.SITA = *pHex32;//S*  的θ 角	
 	obj["SITA"] = U65Info_.SITA;
+	obj["axialDisplacement"]= U65Info_.SITA;//扭转机  轴向位移
+
+
+	obj["twistCount"] = (recvData[12 + 0x1c] & 0xff) +
+						(recvData[12 + 0x1d] & 0xff) * 0x100 +
+						(recvData[12 + 0x1e] & 0xff) * 0x10000 +
+						(recvData[12 + 0x1f] & 0xff) * 0x1000000;//扭转机  测试次数
+
+	Hex32 = (recvData[12 + 0x34] & 0xff) +
+		(recvData[12 + 0x35] & 0xff) * 0x100 +
+		(recvData[12 + 0x36] & 0xff) * 0x10000 +
+		(recvData[12 + 0x37] & 0xff) * 0x1000000;
+	pHex32 = (float*)&Hex32;
+	obj["torque"] = *pHex32;//扭转机  扭矩
+
+
+	Hex32 = (recvData[12 + 0x30] & 0xff) +
+		(recvData[12 + 0x31] & 0xff) * 0x100 +
+		(recvData[12 + 0x32] & 0xff) * 0x10000 +
+		(recvData[12 + 0x33] & 0xff) * 0x1000000;
+	pHex32 = (float*)&Hex32;
+	obj["angle"] = *pHex32;//扭转机  角度
+
 
 	Hex32 = (recvData[12 + 0x3c] & 0xff) +
 		(recvData[12 + 0x3d] & 0xff) * 0x100 +
