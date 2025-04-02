@@ -48,6 +48,12 @@
     <Filter Include="Data\Config">
       <UniqueIdentifier>{59c97c5d-c945-476f-8145-ff50b9bb1edd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Data\Test">
+      <UniqueIdentifier>{55c0cb19-3f9e-442d-944f-e56ed0e93306}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\Report">
+      <UniqueIdentifier>{7f049380-3d6f-48f9-a20c-347dd90383b2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="Twisting.qrc">
@@ -109,6 +115,15 @@
     <ClCompile Include="ControlTestCommHandler.cpp">
       <Filter>U70\Channel</Filter>
     </ClCompile>
+    <ClCompile Include="TestingHandler.cpp">
+      <Filter>Data\Test</Filter>
+    </ClCompile>
+    <ClCompile Include="ReportHandler.cpp">
+      <Filter>Data\Report</Filter>
+    </ClCompile>
+    <ClCompile Include="PIDCommHandler.cpp">
+      <Filter>U70\Channel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DownloadManager.h">
@@ -159,6 +174,15 @@
       <Filter>Data\Config</Filter>
     </QtMoc>
     <QtMoc Include="ControlTestCommHandler.h">
+      <Filter>U70\Channel</Filter>
+    </QtMoc>
+    <QtMoc Include="TestingHandler.h">
+      <Filter>Data\Test</Filter>
+    </QtMoc>
+    <QtMoc Include="ReportHandler.h">
+      <Filter>Data\Report</Filter>
+    </QtMoc>
+    <QtMoc Include="PIDCommHandler.h">
       <Filter>U70\Channel</Filter>
     </QtMoc>
   </ItemGroup>

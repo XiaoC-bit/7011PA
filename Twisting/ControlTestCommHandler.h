@@ -15,6 +15,8 @@ public:
 	[[nodiscard]] bool commFunc(CommunicationThread* socket, QJsonObject& obj, QString& err)  override;
 
 private:
+	bool transferMehod(CommunicationThread* socket, QJsonObject& obj, QString& err);
+
 	bool startTest(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
 	bool home(CommunicationThread* socket, QJsonObject& obj, QString& err);
@@ -24,4 +26,12 @@ private:
 	bool spin(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
 	bool reSpin(CommunicationThread* socket, QJsonObject& obj, QString& err);
+
+
+
+
+private:
+
+	//µ•∏ˆ–¥»ÎDF SET
+	bool perSetDfSet(CommunicationThread* socket, DF_SET& df_set, QString& err);
 };

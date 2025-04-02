@@ -152,6 +152,14 @@ struct ReadU65Struct
 	//STRU_M5000_SET M5000_Set[100]; // 0 ~ 99
 };
 
+//扭转机专用的及时资料区
+struct TwistingData {
+	double torque;//扭矩
+	double angle;//角度
+	double axialDisplacement;//轴向位移
+	double twistCount;
+	double testTimer;
+};
 
 struct U65RawData {
 	float sStar;
@@ -165,6 +173,8 @@ struct U65RawData {
 	float time;
 	int stepNo;//当前执行的步骤，门尼机使用
 	ReadU65Struct U65Info;
+
+	TwistingData twistingData;
 
 	U65RawData() {
 		sStar = 0.0;
@@ -199,5 +209,43 @@ struct U65RawData {
 	}
 };
 Q_DECLARE_METATYPE(U65RawData);
+
+
+
+
+struct  DF_SET
+{
+	unsigned int mui_GroupNo,     // 测试步骤 本组组别（0~99）
+		mui_DISCARD_SAMPLE,  // SWEEP舍弃样本数量
+		mui_TEST_MODE,     // 0:结束循环 1:MDR(定角度) 2:MDR2(定扭矩) 3：RELAX 4：SWEEP 5：DELAY
+		mui_SAMPLE,       // SWEEP取样样本数量
+		mui_TEMP_TOLERANCE,//温度误差 单位0.01度
+		mui_IR_TEMP,       // 指令温度  单位：0.01度
+		mui_MDR_FLAG,      //BIT_0,1=MDR结束条件   00：两者之一到结束 01:测试时间到 10:MH时间到 11:测试跟MH时间同时到达			 BIT_2,3=MDR2温升模式
+		mui_STABLE_TIME;  //等待温度稳定时间 单位：秒
+
+	float       md_IR_CPM,       // 指定CPM（RPA8000）
+		md_IR_ANG;       // 指定角度或扭力（MDR2）
+	int          mi_CONTROL_TIME, // MDR 结束条件： MH持平时间   SWEEP: 稳定时间  DELAY： 延迟时间
+		mi_TEST_EndTime; // 结束条件： 测试时间  HH/MM/MSMS
+
+	// --------------------------------------------
+	DF_SET()
+	{
+		mui_GroupNo = 0;
+		mui_DISCARD_SAMPLE = 0;
+		mui_TEST_MODE = 1;
+		mui_SAMPLE = 100;
+		mui_TEMP_TOLERANCE = 30;
+		mui_IR_TEMP = 2500;
+		mui_MDR_FLAG = 0;
+		mui_STABLE_TIME = 3;
+		md_IR_CPM = 0;
+		md_IR_ANG = 0.5;
+		mi_CONTROL_TIME = 0;
+		mi_TEST_EndTime = 360;
+	}
+};
+
 
 #endif

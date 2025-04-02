@@ -115,8 +115,11 @@
     <ClCompile Include="MsgHandler.cpp" />
     <ClCompile Include="MultiMachDispatcher.cpp" />
     <ClCompile Include="NormalCommHandler.cpp" />
+    <ClCompile Include="PIDCommHandler.cpp" />
+    <ClCompile Include="ReportHandler.cpp" />
     <ClCompile Include="ReportSettingHandler.cpp" />
     <ClCompile Include="SystemConfigHandler.cpp" />
+    <ClCompile Include="TestingHandler.cpp" />
     <ClCompile Include="wsmsgdispatcher.cpp" />
     <QtRcc Include="Twisting.qrc" />
     <QtUic Include="Twisting.ui" />
@@ -143,6 +146,9 @@
     <QtMoc Include="MethodHandler.h" />
     <QtMoc Include="ReportSettingHandler.h" />
     <QtMoc Include="SystemConfigHandler.h" />
+    <QtMoc Include="TestingHandler.h" />
+    <QtMoc Include="ReportHandler.h" />
+    <QtMoc Include="PIDCommHandler.h" />
     <ClInclude Include="ToolDefine.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

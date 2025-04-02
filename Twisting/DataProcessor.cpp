@@ -13,6 +13,8 @@
 #include "MethodHandler.h"
 #include "ReportSettingHandler.h"
 #include "SystemConfigHandler.h"
+#include "TestingHandler.h"
+#include "ReportHandler.h"
 
 extern QString gSqlType;
 
@@ -46,6 +48,10 @@ DataProcessor::DataProcessor(QObject* parent, int deviceId)
 	handlers_["config-method-message"] = std::shared_ptr<MethodHandler>(new MethodHandler(this));
 	handlers_["config-report-message"] = std::shared_ptr<ReportSettingHandler>(new ReportSettingHandler(this));
 	handlers_["config-system-message"] = std::shared_ptr<SystemConfigHandler>(new SystemConfigHandler(this));
+	handlers_["report-message"] = std::shared_ptr<ReportHandler>(new ReportHandler(this));
+
+	//如果需要先经过数据处理的消息，再转到设备线程，使用这个通道
+	handlers_["data-testing-message"] = std::shared_ptr<TestingHandler>(new TestingHandler(this));
 	
 	//类内部使用
 	handlers_["__"] = std::shared_ptr<MsgHandler>(new MsgHandler(this));
@@ -106,7 +112,7 @@ void DataProcessor::queueFunc() {
 		return;
 	}
 	if (!configQuery.next()) {
-		qDebug() <<"deviceId :  "<<deviceId_ << "\t" << QStringLiteral("Error 找不到系统配置数据");
+		//qDebug() <<"deviceId :  "<<deviceId_ << "\t" << QStringLiteral("Error 找不到系统配置数据");
 		return;
 	}
 	if (configQuery.value("id").isNull()) {
@@ -306,34 +312,6 @@ void DataProcessor::endTestQueue(const U65RawData& info) {
 }
 
 void DataProcessor::handleTesting(const U65RawData& info) {
-
-	//if (lastDoorStatus_ == DOOR_STATUS::OPEN &&
-	//	curDoorStatus_ == DOOR_STATUS::CLOSE
-	//	) {
-	//	//原来是开门,现在关门了
-	//	//旧版本代码是下发测试方法.但我们已经在传送按钮时下发了
-	//}
-
-	if (curMoldStatus_ == MOLD_STATUS::UP) {
-		//如果当前模具是打开的,不要记录数据
-		return;
-	}
-
-	if (lastMoldStatus_ == MOLD_STATUS::UP) {
-		//原来打开模具,现在关闭,说明进入下一个胶料测试中
-		startTime_ = info.U65Info.TEST_TIMER ;
-		if (startTime_ != 0) {
-			qDebug() <<"deviceId :  "<<deviceId_ << "\t" <<QStringLiteral("合模，但是开始时间不对");
-			startTime_ = 0;
-		}
-
-		//记录刚开始的时间
-		startTestingTime = std::chrono::high_resolution_clock::now();
-
-		lastTime_ = startTime_;
-		lastAccountTime_ = 0;
-		accountTime_ = 0;
-	}
 	
 	//记录原始数据
 	recordDetail(info);
@@ -367,6 +345,7 @@ void DataProcessor::handleTesting(const U65RawData& info) {
 	if (!getTestDataDB(testDataDb))
 		return;
 
+	//TODO 准备结算
 }
 
 
@@ -411,131 +390,17 @@ void DataProcessor::recordDetail(const U65RawData& info) {
 	time = round(time * 10) / 10;//保留一位小数
 
 
-	//只记录不一样的数据
-	if (lastTime_ == time && time != 0) {
-		return;
-	}
+	////只记录不一样的数据
+	//if (lastTime_ == time && time != 0) {
+	//	return;
+	//}
 
-	if (time - lastTime_ > 5 && lastTime_ ==0) {
-		//
-		qDebug() << "time error";
-		return;
-	}
+	//if (time - lastTime_ > 5 && lastTime_ ==0) {
+	//	//
+	//	qDebug() << "time error";
+	//	return;
+	//}
 
-	int CVmi_MechineType = 0;
-	int mi_temp;
-	mi_temp = info.U65Info.CartDetail[0][0] + info.U65Info.CartDetail[0][1] * 0x100;
-	switch (mi_temp)
-	{
-	case 5000:
-		if (('M' == info.U65Info.CartDetail[0][3]) && ('V' == info.U65Info.CartDetail[0][2]))
-		{
-			CVmi_MechineType = 5001; // 門尼
-		}
-		else if (('M' == info.U65Info.CartDetail[0][3]) && ('-' == info.U65Info.CartDetail[0][2]))
-		{
-			CVmi_MechineType = 5000; // 硫化
-		}
-		else
-		{
-			CVmi_MechineType = 5000; // 硫化
-		}
-		break;
-	case 5001:
-		CVmi_MechineType = 5001; // 門尼
-		break;
-	}
-	float sStar = info.sStar;
-	if (CVmi_MechineType == 5000) {
-		//有时间第一个点的time不是0.尚工要求需要过滤
-		if (info.sStar == 0) {
-			return;
-		}
-
-	}
-	else {
-		//预热阶段，有时候U70数据会抖动，直接设置为0
-		if (info.stepNo == 0) {
-			sStar = 0;
-		}
-
-		/**
-		 *
-		 * 如果是门尼机器.预热、松弛时间不需要减去摩擦，其他阶段需要
-		 *
-		 * \param info
-		 */
-		/*if (info.stepNo == 1) {
-			sStar=info.sStar - (info.U65Info.stru_ReadU65ext.md_SITA_COMP / 83.0);
-		}*/
-	}
-
-	//过滤掉0.1秒前的数据，这些数据有问题
-	if (time < 0.2) {
-		return;
-	}
-
-	if (CVmi_MechineType == 5001) {
-		//阶段1和阶段2开始前5秒不要进行平滑处理
-		const int handleTime = 5;
-
-		if (lastStep_ == 0 && info.stepNo == 1) {
-			step1StartTime_ = time;
-		}
-		if (lastStep_ == 1 && info.stepNo == 2) {
-			step2StartTime_ = time;
-		}
-		lastStep_ = info.stepNo;
-
-		do {
-			if (info.stepNo == 0) {
-				//预热阶段不要平滑
-				break;
-			}
-			if (info.stepNo == 2) {
-				//松弛阶段不要平滑
-				break;
-			}
-			if (time - step1StartTime_ < handleTime) {
-				//阶段1开始前几秒不要平滑
-				details_.clear();
-				break;
-			}
-
-			/**
-			* 门尼机取平均值
-			*/
-			if (details_.length() > 10) {
-				float CVmd_AVG_S = 0;
-				int size = details_.length();
-				for (int i = 0; i < 10; i++) {
-					CVmd_AVG_S += details_[size - i - 1];
-				}
-				CVmd_AVG_S += sStar;
-				sStar = CVmd_AVG_S / 11.0;
-			}
-
-			//取中位数
-			if (details_.length() < CVmi_MediaCount) {
-				CVmd_Media_Mooney[details_.size()] = sStar;
-			}
-			else {
-				for (int mi_temp = 0; mi_temp < CVmi_MediaCount - 1; mi_temp++)
-				{
-					CVmd_Media_Mooney[mi_temp] = CVmd_Media_Mooney[mi_temp + 1];
-				}
-				CVmd_Media_Mooney[CVmi_MediaCount - 1] = sStar;
-				sStar = CVF_GetMedia(CVmd_Media_Mooney, CVmi_MediaCount);
-			}
-
-			details_.push_back(sStar);
-
-		} while (0);
-
-
-
-		
-	}
 
 	lastTime_ = time;
 	//原来在测试,继续测试
@@ -546,20 +411,11 @@ void DataProcessor::recordDetail(const U65RawData& info) {
 		return;
 	}
 	QSqlQuery query(testDataDb);
-	QString strSql = QString("insert into detail(queue_id,sStar,sQuotation,sDoubleQuotation,tanPA,angle,P,upperTemp,lowerTemp,time,stepNo) \
-values(%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11)")
-.arg(queueId_)
-.arg(sStar)
-.arg(info.sQuotation)
-.arg(info.sDoubleQuotation)
-.arg(info.tanPA) 
-.arg(info.angle)
-.arg(info.P)
-.arg(info.upperTemp)
-.arg(info.lowerTemp)
-.arg(time)
-.arg(info.stepNo)
-;
+	QString strSql = QString("insert into detail(queue_id,angle,torque,YZ_mm) values(%1,%2,%3,%4)")
+		.arg(queueId_)
+		.arg(info.twistingData.angle)
+		.arg(info.twistingData.torque)
+		.arg(info.twistingData.axialDisplacement);
 
 	if (!query.exec(strSql)) {
 		qDebug() <<"deviceId :  "<<deviceId_ << "\t" << query.lastError().text();
@@ -636,19 +492,10 @@ bool DataProcessor::beginInternalTest() {
 	if (!getConfigDb(configDb))
 		return false;
 
-	QString strSql =  QString("select * from other_config where item='reproduct' and data = '1'");
-	QSqlQuery configQuery(configDb);
-	if (!configQuery.exec(strSql)) {
-		qDebug() << "deviceId :  " << deviceId_ << "\t" << configDb.lastError().text();
-		return false;
-	}
-	bool reproduct = false;
-	if (configQuery.next()) {
-		reproduct = true; 
-	}
+	QString strSql;
 
 	//获取下一条测试记录,更新为测试中
-	strSql = QString("select id,status,current from queue where current = 1 and status = 0 ORDER BY id limit 1");
+	strSql = QString("select id from queue where current = 1 ORDER BY id limit 1");
 	QSqlQuery testQuery(testDataDb);
 	if (!testQuery.exec(strSql)) {
 		qDebug() <<"deviceId :  "<<deviceId_ << "\t" << "Failed to fetch data:";
@@ -661,14 +508,6 @@ bool DataProcessor::beginInternalTest() {
 	}
 	//更新队列ID
 	queueId_ = testQuery.value("id").toInt();
-	//更新为测试中
-	strSql = QString("update queue set status = 1,reproduct = %1 where id = %2").arg(reproduct?1:0).arg(queueId_);
-	if (!testQuery.exec(strSql)) {
-		qDebug() <<"deviceId :  "<<deviceId_ << "\t" << "Failed to fetch data:";
-		qDebug() <<"deviceId :  "<<deviceId_ << "\t" << testDataDb.lastError().text();
-		return false;
-	}
-
 	return true;
 }
 

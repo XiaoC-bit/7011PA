@@ -8,6 +8,7 @@
 
 #include "NormalCommHandler.h"
 #include "ControlTestCommHandler.h"
+#include "PIDCommHandler.h"
 
 
 CommunicationThread::CommunicationThread(QObject* parent) : QThread(parent), m_socket(nullptr), m_sendTimer(nullptr), recNum1_(0), powerOn_(true)
@@ -15,6 +16,7 @@ CommunicationThread::CommunicationThread(QObject* parent) : QThread(parent), m_s
 
 	commHandlers_["normal-message"] = new NormalCommHandler(u65Info, this);//常规通讯
 	commHandlers_["control-message"] = new ControlTestCommHandler(u65Info, this);//常规通讯
+	commHandlers_["pid-message"] = new PIDCommHandler(u65Info, this);//常规通讯
 
 	useRealTime_ = false;
 
@@ -50,10 +52,17 @@ void CommunicationThread::run()
 
 	if (m_socket->state() != QAbstractSocket::ConnectedState) {
 		m_socket->setProxy(QNetworkProxy::NoProxy);//对于开了VPN的机器，需要设置此项
+#ifdef _DEBUG
+	/*	m_socket->connectToHost(m_deviceAddress, m_port);
+		if (!m_socket->waitForConnected()) {
+			qDebug() << m_socket->errorString();
+		}*/
+#else
 		m_socket->connectToHost(m_deviceAddress, m_port);
 		if (!m_socket->waitForConnected()) {
 			qDebug() << m_socket->errorString();
 		}
+#endif
 	}
 
 	if (m_sendTimer == nullptr) {
@@ -488,7 +497,7 @@ void CommunicationThread::timerFunc()
 		writeQueue_.pop_back();
 		__realTimeTest = 0;
 	}*/
-	__realTimeTest = 1;
+	//__realTimeTest = 0;
 	if (__realTimeTest++ < 1) {
 		//打开这里,关闭程序的时候,会异常
 		//通知Processor,进行测试数据处理
@@ -504,6 +513,12 @@ void CommunicationThread::timerFunc()
 			info.U65Info.TEST_TIMER = time;
 			info.U65Info.U65_MODE = 0;
 			info.U65Info.U65_MSG3 = 512;
+
+			info.twistingData.torque = 1.1 + __realTimeTest;
+			info.twistingData.angle = __realTimeTest;
+			info.twistingData.axialDisplacement = __realTimeTest;
+
+
 			QThread::msleep(10);
 			emit fireRegularInfo(QVariant::fromValue(info));
 		}
@@ -520,6 +535,10 @@ void CommunicationThread::timerFunc()
 			info.U65Info.IO1_IN = 4;//打开模具
 			info.U65Info.U65_MSG3 = 512;
 			info.U65Info.U65_MODE = 11;
+
+			info.twistingData.torque = 1.1 + __realTimeTest;
+			info.twistingData.angle = __realTimeTest;
+			info.twistingData.axialDisplacement = __realTimeTest;
 			emit fireRegularInfo(QVariant::fromValue(info));
 		}
 
@@ -543,6 +562,12 @@ void CommunicationThread::timerFunc()
 				info.U65Info.IO1_IN = 0;// 关闭模具
 				info.U65Info.U65_MSG3 = 512;
 				info.U65Info.U65_MODE = 11;
+
+				info.twistingData.torque = 1.1 + i;
+				info.twistingData.angle = i;
+				info.twistingData.axialDisplacement = 10.2+i;
+
+				QThread::msleep(1000);
 				emit fireRegularInfo(QVariant::fromValue(info));
 			}
 			QThread::msleep(timeout);
@@ -560,6 +585,14 @@ void CommunicationThread::timerFunc()
 			info.U65Info.TEST_TIMER = time;
 			info.U65Info.U65_MODE = 0;
 			info.U65Info.IO1_IN = 4;//打开模具 准备结算
+
+
+
+			info.twistingData.torque = 1.1 + __realTimeTest;
+			info.twistingData.angle = __realTimeTest;
+			info.twistingData.axialDisplacement = __realTimeTest;
+
+
 			emit fireRegularInfo(QVariant::fromValue(info));
 		}
 
@@ -616,10 +649,17 @@ void CommunicationThread::timerFunc()
 		
 		looseFireRealData(obj);
 
+#ifdef _DEBUG
+		//m_socket->connectToHost(m_deviceAddress, m_port);
+		//if (!m_socket->waitForConnected()) {
+		//	//log(m_deviceAddress, m_socket->errorString());
+		//}
+#else
 		m_socket->connectToHost(m_deviceAddress, m_port);
 		if (!m_socket->waitForConnected()) {
 			//log(m_deviceAddress, m_socket->errorString());
 		}
+#endif
 
 		if (!writeQueue_.empty()) {
 			QJsonObject obj;

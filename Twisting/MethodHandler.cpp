@@ -330,13 +330,21 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
         return true;
     }
 
+    strSql = QString("update method_config set is_current = 0");
+    if (!query.exec(strSql))
+    {
+        qDebug() << "Failed to fetch data:";
+        qDebug() << query.lastError().text();
+        return false;
+    }
+
     strSql = QString("insert into method_config(name,remark,\
 specimen_name,batch_number,production_date,operator,lab_temperature,\
 lab_humidity,mode,torsion_speed,torsion_unit,initial_load_torque,\
 initial_load_angle,initial_load_displacement,start_point,end_condition,\
 max_torque,max_angle,break_sensitivity,move_speed,static_mode,\
-constant_angle,constant_torque,cycle_count,dynamic_mode,torsion_frequency,step_time,specimen_number,remarks) values('%1','%2','%3','%4','%5','%6',%7,%8,\
-'%9',%10,'%11',%12,%13,%14,%15,%16,%17,%18,%19,%20,'%21',%22,%23,%24,'%25',%26,%27,'%28','%29')")
+constant_angle,constant_torque,cycle_count,dynamic_mode,torsion_frequency,step_time,specimen_number,remarks,is_current) values('%1','%2','%3','%4','%5','%6',%7,%8,\
+'%9',%10,'%11',%12,%13,%14,%15,%16,%17,%18,%19,%20,'%21',%22,%23,%24,'%25',%26,%27,'%28','%29',%30)")
                  .arg(methodName)
                  .arg(methodRemark)
                  .arg(specimenName)
@@ -365,7 +373,8 @@ constant_angle,constant_torque,cycle_count,dynamic_mode,torsion_frequency,step_t
         .arg(torsionFrequency)
         .arg(stepTime)
         .arg(specimenNumber)
-        .arg(remarks);
+        .arg(remarks)
+        .arg(1);
     if (!query.exec(strSql))
     {
         qDebug() << "Failed to fetch data:";
@@ -387,7 +396,30 @@ bool MethodHandler::fetchDetail(const QSqlDatabase& db, const QJsonObject& recvO
     QSqlQuery query(db);
 
     int id = recvObj["key"].toInt();
-    QString strSql = QString("select * from method_config where id = %1").arg(id);
+    QString strSql;
+    if (id == 0) {
+        strSql = QString("select * from method_config where is_current = 1");
+    }
+    else {
+
+        strSql = QString("update method_config set is_current = 1 where id = %1").arg(id);
+        if (!query.exec(strSql))
+        {
+            qDebug() << "Failed to fetch data:";
+            qDebug() << query.lastError().text();
+            return false;
+        }
+
+        strSql = QString("update method_config set is_current = 0 where id != %1").arg(id);
+        if (!query.exec(strSql))
+        {
+            qDebug() << "Failed to fetch data:";
+            qDebug() << query.lastError().text();
+            return false;
+        }
+
+        strSql = QString("select * from method_config where id = %1").arg(id);
+    }
     if (!query.exec(strSql))
     {
         qDebug() << "Failed to fetch data:";
@@ -475,13 +507,38 @@ bool MethodHandler::deleteData(const QSqlDatabase &db, const QJsonObject &recvOb
         jsonObj["__channel"] = channel_ + "-deleteData";
         jsonObj["status"] = "error";
         jsonObj["message"] = "do not has id to delete";
+        QJsonDocument jsonDoc(jsonObj);
+        response = jsonDoc.toJson();
         return true;
     }
+
+
+    QString strSql = QString("select count(*) as total from method_config ");
+    if (!query.exec(strSql))
+    {
+        qDebug() << "Failed to fetch data:";
+        qDebug() << query.lastError().text();
+        return false;
+    }
+    while (query.next())
+    {
+        if (query.value("total").toInt() == 1) {
+            QJsonObject jsonObj;
+            jsonObj["__channel"] = channel_ + "-deleteData";
+            jsonObj["status"] = "error";
+            jsonObj["message"] = "only one record left,can not delete.";
+            QJsonDocument jsonDoc(jsonObj);
+            response = jsonDoc.toJson();
+            return true;
+        }
+
+    }
+
 
     QJsonArray array = recvObj["ids"].toArray();
     for (auto it = array.begin(); it != array.end(); it++)
     {
-        QString strSql = QString("delete from method_config where id = %1").arg(it->toInt());
+         strSql = QString("delete from method_config where id = %1").arg(it->toInt());
         if (!query.exec(strSql))
         {
             qDebug() << "Failed to fetch data:";
