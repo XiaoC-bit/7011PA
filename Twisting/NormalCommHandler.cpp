@@ -97,20 +97,19 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 	float* pHex32 = (float*)&Hex32;
 	U65Info_.SITA = *pHex32;//S*  的θ 角	
 	obj["SITA"] = U65Info_.SITA;
-	obj["axialDisplacement"]= U65Info_.SITA;//扭转机  轴向位移
 
 
-	obj["twistCount"] = (recvData[12 + 0x1c] & 0xff) +
-						(recvData[12 + 0x1d] & 0xff) * 0x100 +
-						(recvData[12 + 0x1e] & 0xff) * 0x10000 +
-						(recvData[12 + 0x1f] & 0xff) * 0x1000000;//扭转机  测试次数
+	obj["twistCount"] = (recvData[12 + 0xD0] & 0xff) +
+						(recvData[12 + 0xD1] & 0xff) * 0x100 +
+						(recvData[12 + 0xD2] & 0xff) * 0x10000 +
+						(recvData[12 + 0xD3] & 0xff) * 0x1000000;//扭转机  测试次数
 
 	Hex32 = (recvData[12 + 0x34] & 0xff) +
 		(recvData[12 + 0x35] & 0xff) * 0x100 +
 		(recvData[12 + 0x36] & 0xff) * 0x10000 +
 		(recvData[12 + 0x37] & 0xff) * 0x1000000;
 	pHex32 = (float*)&Hex32;
-	obj["torque"] = *pHex32;//扭转机  扭矩
+	obj["angle"] = *pHex32;//扭转机  角度
 
 
 	Hex32 = (recvData[12 + 0x30] & 0xff) +
@@ -118,7 +117,6 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 		(recvData[12 + 0x32] & 0xff) * 0x10000 +
 		(recvData[12 + 0x33] & 0xff) * 0x1000000;
 	pHex32 = (float*)&Hex32;
-	obj["angle"] = *pHex32;//扭转机  角度
 
 
 	Hex32 = (recvData[12 + 0x3c] & 0xff) +
@@ -128,6 +126,7 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 	U65Info_.sStar = *pHex32; //S*
 	U65Info_.sStar = U65Info_.sStar / 100;
 	obj["sStar"] = U65Info_.sStar;
+	obj["axialDisplacement"] = *pHex32;//扭转机  轴向位移
 
 
 	Hex32 = (recvData[12 + 0x40] & 0xff) +
@@ -136,6 +135,7 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 		(recvData[12 + 0x43] & 0xff) * 0x1000000;
 	U65Info_.AD_2 = *pHex32; //发泡力
 	obj["P"] = U65Info_.AD_2;
+	obj["torque"] = U65Info_.AD_2;//扭转机  扭矩
 
 
 	U65Info_.sDoubleQuotation = (U65Info_.sStar) * sin(U65Info_.SITA * 3.14 / 180);
@@ -354,6 +354,89 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 			break;
 		}
 	}
+
+	//读取当前流水号 
+	if (!readInt32(socket, 0x0808, U65Info_.REAL_MSG_CT, err)) {
+		err = "readInt32 error " + socket->socketError();
+		return false;
+	}
+
+	//qDebug() << "REAL_MSG_CT:" << U65Info_.REAL_MSG_CT;
+
+	{
+		QByteArray buffer;
+		buffer.fill(0x00, 528);
+		setCmd(E_Mode::Read, buffer);
+		setLength(8*24, buffer);
+		setAddr(0x0810, buffer);
+		calcSum(buffer);
+		if (!socket->writeData(buffer)) {
+			err = "writeData error " + socket->socketError();
+			return false;
+		}
+		QByteArray recvData;
+		if (!socket->readData(recvData)) {
+			err = "readData error " + socket->socketError();
+			return false;
+		}
+		if (!checkSum(recvData)) {
+			err = "readData error ,checksum error";
+			return false;
+		}
+
+		/**
+		 * 判断数据正确性
+		 *
+		 */
+		if ((recvData[4] & 0xff) != 0x52 || (recvData[5] & 0xff) != 0x44 || (recvData[6] & 0xff) != 8*24) {
+			err = "readData error ,data error";
+			return false;
+		}
+
+		for (int i = 0; i < 12; i++) {
+			//遍历读取 浮点读取
+			Hex32 = (recvData[12 + 0x00 + i * 16] & 0xff) +
+				(recvData[12 + 0x01 + i * 16] & 0xff) * 0x100 +
+				(recvData[12 + 0x02 + i * 16] & 0xff) * 0x10000 +
+				(recvData[12 + 0x03 + i * 16] & 0xff) * 0x1000000;
+			float* pHex32 = (float*)&Hex32;
+			U65Info_.AD1[i] = *pHex32;
+			Hex32 = (recvData[12 + 0x04 + i * 16] & 0xff) +
+				(recvData[12 + 0x05 + i * 16] & 0xff) * 0x100 +
+				(recvData[12 + 0x06 + i * 16] & 0xff) * 0x10000 +
+				(recvData[12 + 0x07 + i * 16] & 0xff) * 0x1000000;
+			pHex32 = (float*)&Hex32;
+			U65Info_.AD2[i] = *pHex32;
+			Hex32 = (recvData[12 + 0x08 + i * 16] & 0xff) +
+				(recvData[12 + 0x09 + i * 16] & 0xff) * 0x100 +
+				(recvData[12 + 0x0A + i * 16] & 0xff) * 0x10000 +
+				(recvData[12 + 0x0B + i * 16] & 0xff) * 0x1000000;
+			pHex32 = (float*)&Hex32;
+			U65Info_.X[i] = *pHex32;
+			Hex32 = (recvData[12 + 0x0C + i * 16] & 0xff) +
+				(recvData[12 + 0x0D + i * 16] & 0xff) * 0x100 +
+				(recvData[12 + 0x0E + i * 16] & 0xff) * 0x10000 +
+				(recvData[12 + 0x0F + i * 16] & 0xff) * 0x1000000;
+			pHex32 = (float*)&Hex32;
+			U65Info_.YZ_MM[i] = *pHex32;
+
+
+			
+			
+		/*	qDebug() << "AD1[" << i << "]" << U65Info_.AD1[i] << "\n"
+				<< "X[" << i << "]" << U65Info_.X[i] << "\n"
+				<< "YZ_MM[" << i << "]" << U65Info_.YZ_MM[i] << "\n"
+				<< "AD2[" << i << "]" << U65Info_.AD2[i];*/
+				
+				
+
+		}
+
+
+
+	}
+
+
 	return true;
 }
 

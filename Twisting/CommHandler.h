@@ -16,7 +16,14 @@ public:
 
 protected:
 
+	bool readInt16(CommunicationThread* socket, int addr, int16_t& value, QString& err);
+	bool readInt32(CommunicationThread* socket, int addr, int32_t& value, QString& err);
+
+	bool writeInt16(CommunicationThread* socket, int addr, int16_t value, QString& err);
 	bool writeInt32(CommunicationThread* socket, int addr, int32_t value, QString& err);
+
+
+	bool writeFloat(CommunicationThread* socket, int addr, float value, QString& err);
 	/*
 	if (machType == "sulfur change instrument") {
 

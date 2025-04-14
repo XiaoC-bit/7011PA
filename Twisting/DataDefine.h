@@ -150,6 +150,14 @@ struct ReadU65Struct
 	//STRU_M5000_SET stru_M5000_SET_def;
 	//PID_Bank_Struct RAM_PID[15];
 	//STRU_M5000_SET M5000_Set[100]; // 0 ~ 99
+
+
+
+	int REAL_MSG_CT;//流水号
+	float AD1[12];//轴向位移
+	float X[12];//扭矩输出
+	float YZ_MM[12];//编码器反馈的扭矩
+	float AD2[12];//角度
 };
 
 //扭转机专用的及时资料区
@@ -194,13 +202,17 @@ struct U65RawData {
 			return false;
 		}
 		else if (U65Info.U65_MODE == 3) {
-			if (U65Info.U65_MSG < 10) {
-				//马达没启动
-				return false;
-			}
-			else {
-				return true;
-			}
+			//if (U65Info.U65_MSG == 1) {
+			//	return true;
+			//}
+			//if (U65Info.U65_MSG < 10) {
+			//	//马达没启动
+			//	return false;
+			//}
+			//else {
+			//	return true;
+			//}
+			return true;
 		}
 		else if (U65Info.U65_MODE == 11) {
 			return true;
@@ -215,35 +227,33 @@ Q_DECLARE_METATYPE(U65RawData);
 
 struct  DF_SET
 {
-	unsigned int mui_GroupNo,     // 测试步骤 本组组别（0~99）
-		mui_DISCARD_SAMPLE,  // SWEEP舍弃样本数量
-		mui_TEST_MODE,     // 0:结束循环 1:MDR(定角度) 2:MDR2(定扭矩) 3：RELAX 4：SWEEP 5：DELAY
-		mui_SAMPLE,       // SWEEP取样样本数量
-		mui_TEMP_TOLERANCE,//温度误差 单位0.01度
-		mui_IR_TEMP,       // 指令温度  单位：0.01度
-		mui_MDR_FLAG,      //BIT_0,1=MDR结束条件   00：两者之一到结束 01:测试时间到 10:MH时间到 11:测试跟MH时间同时到达			 BIT_2,3=MDR2温升模式
-		mui_STABLE_TIME;  //等待温度稳定时间 单位：秒
-
-	float       md_IR_CPM,       // 指定CPM（RPA8000）
-		md_IR_ANG;       // 指定角度或扭力（MDR2）
-	int          mi_CONTROL_TIME, // MDR 结束条件： MH持平时间   SWEEP: 稳定时间  DELAY： 延迟时间
-		mi_TEST_EndTime; // 结束条件： 测试时间  HH/MM/MSMS
+	unsigned int mui_GroupNo;     // 测试步骤 本组组别（0~99）
+		
+	int16_t ZERO_DEVICE;
+	int16_t IR_TYPE;
+	int16_t DF_SIGNAL;
+	float DF_HZ;
+	float DF_IR;
+	int32_t DF_END_CYCLE;
+	int32_t DF_END_TIME;
+	int16_t JUMP_NO;
+	int16_t DF_SP_UNIT;
+	int16_t MEM_NO;
 
 	// --------------------------------------------
 	DF_SET()
 	{
 		mui_GroupNo = 0;
-		mui_DISCARD_SAMPLE = 0;
-		mui_TEST_MODE = 1;
-		mui_SAMPLE = 100;
-		mui_TEMP_TOLERANCE = 30;
-		mui_IR_TEMP = 2500;
-		mui_MDR_FLAG = 0;
-		mui_STABLE_TIME = 3;
-		md_IR_CPM = 0;
-		md_IR_ANG = 0.5;
-		mi_CONTROL_TIME = 0;
-		mi_TEST_EndTime = 360;
+		ZERO_DEVICE = 0;
+		IR_TYPE = 0;
+		DF_SIGNAL = 0;
+		DF_HZ = 0;
+		DF_IR = 0;
+		DF_END_CYCLE = 0;
+		DF_END_TIME = 0;
+		JUMP_NO = 0;
+		DF_SP_UNIT = 0;
+		MEM_NO = 0;
 	}
 };
 

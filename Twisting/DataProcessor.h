@@ -45,6 +45,8 @@ public slots:
 
 private:
 
+	bool account(QSqlDatabase& configDb, QSqlDatabase& testDb, bool final);
+
 	bool transferMethodFunc(const int id);
 
 	/**
@@ -161,6 +163,9 @@ private slots:
 
 private:
 	QMap<QString, std::shared_ptr< MsgHandler>> handlers_;
+
+	QVector< TwistingData> vecTwistingData_;// 记录当前的测试数据
+
 	bool lastTesting_;// 上一次循环是否处于测试状态
 	bool curTesting_;//本次循环是否处于测试状态
 	enum DOOR_STATUS {
@@ -226,4 +231,8 @@ private:
 	DOOR_STATUS checkcurDoorStatus_;// 当前循环，门的状态
 	MOLD_STATUS checklastMoldStatus_;// 上一次循环，上下模的状态
 	MOLD_STATUS checkcurMoldStatus_;// 当前循环，上下模的状态
+
+
+	int32_t last_REAL_MSG_CT_;//上次流水号
+	int32_t cur_REAL_MSG_CT_;//当前流水号
 };

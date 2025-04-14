@@ -232,12 +232,6 @@ bool TestingHandler::transferMethodPreHandle(const QSqlDatabase& configDb, const
         qDebug() << "mode type error";
         return false;
     }
-    if (configForm["initialLoadTorque"].isNull())
-    {
-        qDebug() << "initialLoadTorque error";
-        return false;
-    }
-    double initialLoadTorque = configForm["initialLoadTorque"].toDouble();
 
     if (configForm["startPoint"].isNull())
     {
@@ -246,18 +240,7 @@ bool TestingHandler::transferMethodPreHandle(const QSqlDatabase& configDb, const
     }
     double startPoint = configForm["startPoint"].toDouble();
 
-    if (configForm["initialLoadAngle"].isNull())
-    {
-        qDebug() << "initialLoadAngle error";
-        return false;
-    }
-    double initialLoadAngle = configForm["initialLoadAngle"].toDouble();
-    if (configForm["initialLoadDisplacement"].isNull())
-    {
-        qDebug() << "initialLoadDisplacement error";
-        return false;
-    }
-    double initialLoadDisplacement = configForm["initialLoadDisplacement"].toDouble();
+  
     if (configForm["endCondition"].isNull())
     {
         qDebug() << "endCondition error";
@@ -302,6 +285,20 @@ bool TestingHandler::transferMethodPreHandle(const QSqlDatabase& configDb, const
     if (configQuery.next())
     {
         methodId = configQuery.value("id").toInt();
+    }
+
+    /*strSql = QString("delete from queue where status != 2");
+    if (!testQuery.exec(strSql)) {
+        qDebug() << "Failed to fetch data:";
+        qDebug() << testQuery.lastError().text();
+        return false;
+    }*/
+    //将测试记录全部设置为非当前状态
+    strSql = QString("update queue set current = 0");
+    if (!testQuery.exec(strSql)) {
+        qDebug() << "Failed to fetch data:";
+        qDebug() << testQuery.lastError().text();
+        return false;
     }
 
     strSql = QString("INSERT INTO queue(\

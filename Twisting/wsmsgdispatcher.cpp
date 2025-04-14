@@ -145,6 +145,11 @@ void WsMsgDispatcher::processTextMessage(QString message)
 		emit requestMach(recvObj);
 		return;
 	}
+	else if (channel == "pid-message") {
+		//控制类消息，转发至设备通讯线程
+		emit requestMach(recvObj);
+		return;
+	}
 	else if(channel == "testing-message") {
 		//测试类消息，统一转发给数据处理线程
 		//因为有一些指令，需要先从数据库中获取，再跟设备通讯

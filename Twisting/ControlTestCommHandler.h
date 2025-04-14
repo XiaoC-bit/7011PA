@@ -18,6 +18,7 @@ private:
 	bool transferMehod(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
 	bool startTest(CommunicationThread* socket, QJsonObject& obj, QString& err);
+	bool stopTest(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
 	bool home(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
@@ -27,7 +28,8 @@ private:
 
 	bool reSpin(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
-
+	//น้มใ
+	bool zero(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
 
 private:

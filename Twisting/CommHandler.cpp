@@ -144,6 +144,135 @@ void CommHandler::setCmd(E_Mode mode, QByteArray& buffer) {
 }
 
 
+bool CommHandler::writeFloat(CommunicationThread* socket, int addr, float value, QString& err) {
+	QByteArray buffer;
+	buffer.fill(0x00, 528);
+	setCmd(E_Mode::Write, buffer);
+	setLength(0x04, buffer);
+	setAddr(addr, buffer);
+	if (isLitteEndian()) {
+		char* ptr = reinterpret_cast<char*>(&value);
+		buffer[12] = ptr[0];
+		buffer[13] = ptr[1];
+		buffer[14] = ptr[2];
+		buffer[15] = ptr[3];
+	}
+	else {
+		char* ptr = reinterpret_cast<char*>(&value);
+		buffer[12] = ptr[3];
+		buffer[13] = ptr[2];
+		buffer[14] = ptr[1];
+		buffer[15] = ptr[0];
+	}
+	calcSum(buffer);
+	if (!socket->writeData(buffer)) {
+		err = "writeData error " + socket->socketError();
+		return false;
+	}
+	QByteArray recvData;
+	if (!socket->readData(recvData)) {
+		err = "readData error " + socket->socketError();
+		return false;
+	}
+	if (!checkSum(recvData)) {
+		err = "readData error ,checksum error";
+		return false;
+	}
+	//判断数据正确性
+	return true;
+}
+
+
+bool CommHandler::readInt16(CommunicationThread* socket, int addr, int16_t& value, QString& err) {
+	QByteArray buffer;
+	buffer.fill(0x00, 528);
+	setCmd(E_Mode::Read, buffer);
+	setLength(0x02, buffer);
+	setAddr(addr, buffer);
+	calcSum(buffer);
+	if (!socket->writeData(buffer)) {
+		err = "writeData error " + socket->socketError();
+		return false;
+	}
+	QByteArray recvData;
+	if (!socket->readData(recvData)) {
+		err = "readData error " + socket->socketError();
+		return false;
+	}
+	if (!checkSum(recvData)) {
+		err = "readData error ,checksum error";
+		return false;
+	}
+	//判断数据正确性
+	if ((recvData[4] & 0xff) != 0x52 || (recvData[5] & 0xff) != 0x44 || (recvData[6] & 0xff) != 0x02) {
+		err = "readData error ,data error";
+		return false;
+	}
+	value = (recvData[12] & 0xff) + (recvData[13] & 0xff) * 0x0100;
+	return true;
+}
+
+bool CommHandler::readInt32(CommunicationThread* socket, int addr, int32_t& value, QString& err) {
+	QByteArray buffer;
+	buffer.fill(0x00, 528);
+	setCmd(E_Mode::Read, buffer);
+	setLength(0x04, buffer);
+	setAddr(addr, buffer);
+	calcSum(buffer);
+	if (!socket->writeData(buffer)) {
+		err = "writeData error " + socket->socketError();
+		return false;
+	}
+	QByteArray recvData;
+	if (!socket->readData(recvData)) {
+		err = "readData error " + socket->socketError();
+		return false;
+	}
+	if (!checkSum(recvData)) {
+		err = "readData error ,checksum error";
+		return false;
+	}
+	//判断数据正确性
+	if ((recvData[4] & 0xff) != 0x52 || (recvData[5] & 0xff) != 0x44 || (recvData[6] & 0xff) != 0x04) {
+		err = "readData error ,data error";
+		return false;
+	}
+
+	value = (recvData[12] & 0xff) +
+		(recvData[13] & 0xff) * 0x0100 +
+		(recvData[14] & 0xff) * 0x010000 +
+		(recvData[15] & 0xff) * 0x01000000;
+	return true;
+}
+
+
+bool CommHandler::writeInt16(CommunicationThread* socket, int addr, int16_t value, QString& err) {
+	QByteArray buffer;
+	buffer.fill(0x00, 528);
+	setCmd(E_Mode::Write, buffer);
+	setLength(0x02, buffer);
+	setAddr(addr, buffer);
+	buffer[12] = int8_t((value & 0x000000FF));
+	buffer[13] = int8_t((value & 0x0000FF00) >> 8);
+	calcSum(buffer);
+	if (!socket->writeData(buffer)) {
+		err = "writeData error " + socket->socketError();
+		return false;
+	}
+	QByteArray recvData;
+	if (!socket->readData(recvData)) {
+		err = "readData error " + socket->socketError();
+		return false;
+	}
+	if (!checkSum(recvData)) {
+		err = "readData error ,checksum error";
+		return false;
+	}
+
+	return true;
+}
+
+
 bool CommHandler::writeInt32(CommunicationThread* socket, int addr, int32_t value, QString& err) {
 	QByteArray buffer;
 	buffer.fill(0x00, 528);

@@ -33,45 +33,40 @@ bool PIDCommHandler::commFunc(CommunicationThread* socket, QJsonObject& obj, QSt
 bool PIDCommHandler::readData(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 	//从obj中提取PID组数,类型为int
 	int group = obj["group"].toInt();
-	if (group < 0 || group > 15) {
+	if (group < 0 || group > 32) {
 		err = "group error";
 		return false;
 	}
 
 	//计算地址
-	int addr = 0x2000 + group * 0x100;
-	int length = 0x100;
+	int addr = 0x1000 + group * 0x100;
+	int length = 0xff;
 
 
 
 	QByteArray buffer;
-	buffer.fill(0x00, length);
+	buffer.fill(0x00, 528);
 	setCmd(E_Mode::Read, buffer);
 	setLength(length, buffer);
 	setAddr(addr, buffer);
 	calcSum(buffer);
 	if (!socket->writeData(buffer)) {
 		err = "writeData error " + socket->socketError();
+		qDebug() << "123xxx";
 		return false;
 	}
 	QByteArray recvData;
 	if (!socket->readData(recvData)) {
 		err = "readData error " + socket->socketError();
+		qDebug() << "123xxx";
 		return false;
 	}
 	if (!checkSum(recvData)) {
 		err = "readData error ,checksum error";
+		qDebug() << "123xxx";
 		return false;
 	}
 
-	/**
-	 * 判断数据正确性
-	 *
-	 */
-	if ((recvData[4] & 0xff) != 0x52 || (recvData[5] & 0xff) != 0x44 || (recvData[6] & 0xff) != 0xFF) {
-		err = "readData error ,data error";
-		return false;
-	}
 
 	 //PID_BANK
 	obj["PID_BANK"] = (recvData[12 + 0x00] & 0xff) + (recvData[12 + 0x01] & 0xff) * 0x100;
@@ -404,18 +399,20 @@ bool PIDCommHandler::readData(CommunicationThread* socket, QJsonObject& obj, QSt
 }
 
 
-bool PIDCommHandler::writeData(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+bool PIDCommHandler::writeData(CommunicationThread* socket, QJsonObject& recvObj, QString& err) {
 	//从obj中提取PID组数,类型为int
-	int group = obj["group"].toInt();
-	if (group < 0 || group > 15) {
+	int group = recvObj["group"].toInt();
+	if (group < 0 || group > 32) {
 		err = "group error";
 		return false;
 	}
+
+	QJsonObject obj = recvObj["pid"].toObject();
 	//计算地址
-	int addr = 0x2000 + group * 0x100;
-	int length = 0x100;
+	int addr = 0x1000 + group * 0x100;
+	int length = 0xff;
 	QByteArray buffer;
-	buffer.fill(0x00, length);
+	buffer.fill(0x00, 528);
 	setCmd(E_Mode::Write, buffer);
 	setLength(length, buffer);
 	setAddr(addr, buffer);
@@ -423,8 +420,10 @@ bool PIDCommHandler::writeData(CommunicationThread* socket, QJsonObject& obj, QS
 	//从obj中提取数据，填充到buffer中
 	// 2-byte integers
 	// 2-byte integers
-	buffer[12 + 0x00] = int8_t(obj["PID_BANK"].toInt() & 0x00FF);
-	buffer[12 + 0x01] = int8_t((obj["PID_BANK"].toInt() & 0xFF00) >> 8);
+	/*buffer[12 + 0x00] = int8_t(obj["PID_BANK"].toInt() & 0x00FF);
+	buffer[12 + 0x01] = int8_t((obj["PID_BANK"].toInt() & 0xFF00) >> 8);*/
+	buffer[12 + 0x00] = int8_t(group & 0x00FF);
+	buffer[12 + 0x01] = int8_t((group & 0xFF00) >> 8);
 	buffer[12 + 0x02] = int8_t(obj["PID_MODE"].toInt() & 0x00FF);
 	buffer[12 + 0x03] = int8_t((obj["PID_MODE"].toInt() & 0xFF00) >> 8);
 	buffer[12 + 0x04] = int8_t(obj["PID_COMD"].toInt() & 0x00FF);
@@ -1105,7 +1104,7 @@ bool PIDCommHandler::writeData(CommunicationThread* socket, QJsonObject& obj, QS
 		err = "readData error ,checksum error";
 		return false;
 	}
-
+	recvObj["status"] = "success";
 
 	return true;
 }

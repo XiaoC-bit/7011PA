@@ -58,6 +58,9 @@ bool terminateProcessByName(const std::string& processName) {
 
 void logMessage(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
+	if (msg.contains("Using QByteRef with")) {
+		qDebug() << "aaa";
+	}
 	static QMutex mutex;
 	mutex.lock();
 

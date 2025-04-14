@@ -81,7 +81,7 @@ void CommunicationThread::run()
 	}
 	//每600ms读取一次数据，可能有其他通讯任务，将定时器间隔设置小一点
 	//读取历史资料区的话，可以不用这么频繁，待优化
-	m_sendTimer->setInterval(100);
+	m_sendTimer->setInterval(5);
 	m_sendTimer->start();
 
 	exec(); // Start event loop
@@ -134,6 +134,13 @@ void CommunicationThread::init(const QString& deviceAddress, quint16 port)
 
 
 void CommunicationThread::normalTimerFunc() {
+
+	/*if (1) {
+		U65RawData info;
+		emit fireRegularInfo(QVariant::fromValue(info));
+	}*/
+
+
 	QString strErr;
 	QJsonObject obj;
 	obj["__channel"] = "normal-message";
@@ -149,6 +156,7 @@ void CommunicationThread::normalTimerFunc() {
 	//qDebug() << obj["machType"].toString() <<"ip " << m_deviceAddress << " dev id " << deviceId_;
 	//设备通讯完毕，通知前端
 	//emit wsResponse(obj);
+	obj["connectErr"] = false;
 	looseFireRealData(obj);
 
 	//通知Processor,进行测试数据处理
@@ -169,12 +177,12 @@ void CommunicationThread::normalTimerFunc() {
 	info.lowerTemp = rawData.lowerTemp;
 	info.U65Info = rawData;
 
-	if (!useRealTime_) {
+	if (false) {
 		//通过读取资料区的方式,模拟采集
 		return fakeData(info);
 	}
 	else {
-		//通知数据处理线程
+		//读取缓冲区
 		emit fireRegularInfo(QVariant::fromValue(info));
 	}
 }
@@ -431,7 +439,6 @@ void CommunicationThread::handleCommCtrlMsg(const QJsonObject& recvObj) {
 }
 
 void CommunicationThread::otherTimerFunc() {
-	qDebug() << "otherTimerFunc";
 	//取出待发送数据
 	writeMtx_.lock();
 	QJsonObject obj = writeQueue_.front();
@@ -465,142 +472,6 @@ static int __historyTest = 1;
 
 void CommunicationThread::timerFunc()
 {
-
-#ifdef _DEBUG
-	__historyTest = 0;//历史资料区测试
-	if (__historyTest) {
-		__historyTest--;
-		U65RawData info;
-		//将通讯数据获取后，组合结构体，发到数据处理线程
-		ReadU65Struct rawData;
-		info.sStar = rawData.sStar;
-		info.sQuotation = rawData.sQuotation;
-		info.sDoubleQuotation = rawData.sDoubleQuotation;
-		info.tanPA = rawData.sDoubleQuotation / rawData.sQuotation;// 自己计算tanPA
-		info.angle = rawData.SITA * 3.14 / 180;
-		info.P = rawData.AD_2;
-		info.upperTemp = rawData.upperTemp;
-		info.lowerTemp = rawData.lowerTemp;
-		info.U65Info = rawData;
-
-		info.U65Info.U65_MODE = 3;
-		info.U65Info.U65_MSG = 11;
-		
-
-		fakeData(info);
-	}
-	
-	//及时资料区测试
-	int timeout = 6; 
-	//用于测试外部测试队列
-	/*if (!writeQueue_.empty()) {
-		writeQueue_.pop_back();
-		__realTimeTest = 0;
-	}*/
-	//__realTimeTest = 0;
-	if (__realTimeTest++ < 1) {
-		//打开这里,关闭程序的时候,会异常
-		//通知Processor,进行测试数据处理
-
-		float time = 0;
-		{
-			U65RawData info;
-			//	info.u65Mode = U65_MODE::INIT;
-			info.sStar = 5 + __realTimeTest;
-			info.tanPA = 7 + __realTimeTest;
-			info.lowerTemp = __realTimeTest + 1;
-			info.upperTemp = __realTimeTest + 2;
-			info.U65Info.TEST_TIMER = time;
-			info.U65Info.U65_MODE = 0;
-			info.U65Info.U65_MSG3 = 512;
-
-			info.twistingData.torque = 1.1 + __realTimeTest;
-			info.twistingData.angle = __realTimeTest;
-			info.twistingData.axialDisplacement = __realTimeTest;
-
-
-			QThread::msleep(10);
-			emit fireRegularInfo(QVariant::fromValue(info));
-		}
-
-		time += 0.6;
-		{
-			U65RawData info;
-			//	info.u65Mode = U65_MODE::TESTING;//测试中
-			info.sStar = 5 + __realTimeTest;
-			info.tanPA = 7 + __realTimeTest;
-			info.lowerTemp = __realTimeTest + 1;
-			info.upperTemp = __realTimeTest + 2;
-			info.U65Info.TEST_TIMER = time;
-			info.U65Info.IO1_IN = 4;//打开模具
-			info.U65Info.U65_MSG3 = 512;
-			info.U65Info.U65_MODE = 11;
-
-			info.twistingData.torque = 1.1 + __realTimeTest;
-			info.twistingData.angle = __realTimeTest;
-			info.twistingData.axialDisplacement = __realTimeTest;
-			emit fireRegularInfo(QVariant::fromValue(info));
-		}
-
-		for (int i = 0; i < 500; i++)
-		{
-			time += 0.6;
-			for (int j = 0; j < 1; j++) {
-				U65RawData info;
-				//info.u65Mode = U65_MODE::TESTING;
-				info.tanPA = 7 + __realTimeTest;
-				info.angle = 10 + __realTimeTest;
-				info.sStar = 5 + time;
-				info.sQuotation = 10 + time;
-				info.sDoubleQuotation = 20 + time;
-				if (i == 30) {
-					info.sStar = 10;
-				}
-				info.lowerTemp = __realTimeTest + 1;
-				info.upperTemp = __realTimeTest + 2;
-				info.U65Info.TEST_TIMER = time;
-				info.U65Info.IO1_IN = 0;// 关闭模具
-				info.U65Info.U65_MSG3 = 512;
-				info.U65Info.U65_MODE = 11;
-
-				info.twistingData.torque = 1.1 + i;
-				info.twistingData.angle = i;
-				info.twistingData.axialDisplacement = 10.2+i;
-
-				QThread::msleep(1000);
-				emit fireRegularInfo(QVariant::fromValue(info));
-			}
-			QThread::msleep(timeout);
-		}
-
-
-		{
-			time += 0.6;
-			U65RawData info;
-			//	info.u65Mode = U65_MODE::TESTING;
-			info.sStar = 5 + __realTimeTest;
-			info.tanPA = 7 + __realTimeTest;
-			info.lowerTemp = __realTimeTest + 1;
-			info.upperTemp = __realTimeTest + 2;
-			info.U65Info.TEST_TIMER = time;
-			info.U65Info.U65_MODE = 0;
-			info.U65Info.IO1_IN = 4;//打开模具 准备结算
-
-
-
-			info.twistingData.torque = 1.1 + __realTimeTest;
-			info.twistingData.angle = __realTimeTest;
-			info.twistingData.axialDisplacement = __realTimeTest;
-
-
-			emit fireRegularInfo(QVariant::fromValue(info));
-		}
-
-		__realTimeTest = 1;
-
-	}
-#endif
-
 	if (!commCtrlQueue_.empty()) {
 		ctrlMtx_.lock();
 		QJsonObject obj = commCtrlQueue_.front();
@@ -629,20 +500,20 @@ void CommunicationThread::timerFunc()
 		obj["__deviceId"] = deviceId_;
 #ifdef _DEBUG
 		//用来测试单位显示
-		obj["connectErr"] = false;
-		obj["sStar"] = 10;
-		obj["sQuotation"] = 10;
-		obj["sDoubleQuotation"] = 10;
-		obj["upperTemp"] = 10;
-		obj["lowerTemp"] = 10;
+		//obj["connectErr"] = false;
+		//obj["sStar"] = 10;
+		//obj["sQuotation"] = 10;
+		//obj["sDoubleQuotation"] = 10;
+		//obj["upperTemp"] = 10;
+		//obj["lowerTemp"] = 10;
 
-		obj["torque"] = 1.1;//扭转机  扭矩
-		obj["angle"] = 2.2;//扭转机  扭矩
-		obj["axialDisplacement"] = 3.3;//扭转机  轴向位移
+		//obj["torque"] = 1.1;//扭转机  扭矩
+		//obj["angle"] = 2.2;//扭转机  扭矩
+		//obj["axialDisplacement"] = 3.3;//扭转机  轴向位移
 
-		obj["twistCount"] = 4;//扭转机  轴向位移
-		obj["testTimer"] = 3389;//扭转机  轴向位移
-		
+		//obj["twistCount"] = 4;//扭转机  轴向位移
+		//obj["testTimer"] = 3389;//扭转机  轴向位移
+		obj["connectErr"] = true;
 #else
 		obj["connectErr"] = true;
 #endif
@@ -650,10 +521,10 @@ void CommunicationThread::timerFunc()
 		looseFireRealData(obj);
 
 #ifdef _DEBUG
-		//m_socket->connectToHost(m_deviceAddress, m_port);
-		//if (!m_socket->waitForConnected()) {
-		//	//log(m_deviceAddress, m_socket->errorString());
-		//}
+		m_socket->connectToHost(m_deviceAddress, m_port);
+		if (!m_socket->waitForConnected()) {
+			//log(m_deviceAddress, m_socket->errorString());
+		}
 #else
 		m_socket->connectToHost(m_deviceAddress, m_port);
 		if (!m_socket->waitForConnected()) {
@@ -730,6 +601,7 @@ void CommunicationThread::log(const QString& str) {
 }
 
 void CommunicationThread::log(const QString& ip, const QString& str) {
+	return;//写日志太频繁了
 	qDebug()
 		<< "ip "
 		<< ip

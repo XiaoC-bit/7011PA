@@ -20,4 +20,6 @@ private:
 	[[nodiscard]] bool deleteData(const QSqlDatabase& db, const QJsonObject& obj, QString& response);
 	[[nodiscard]] bool fetchDetail(const QSqlDatabase& db, const QJsonObject& obj, QString& response);
 	
+	//修改当前方法的参数
+	[[nodiscard]] bool modifyData(const QSqlDatabase& db, const QJsonObject& obj, QString& response);
 };

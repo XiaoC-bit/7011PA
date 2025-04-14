@@ -1,5 +1,6 @@
 #include "ControlTestCommHandler.h"
 #include "DataDefine.h"
+#include <qjsonarray.h>
 ControlTestCommHandler::ControlTestCommHandler(ReadU65Struct& ref, QObject* parent)
 	: CommHandler(ref,parent)
 {}
@@ -26,8 +27,14 @@ bool ControlTestCommHandler::commFunc(CommunicationThread* socket, QJsonObject& 
 	else if (type == "start-test") {
 		return startTest(socket, obj, err);
 	}
+    else if (type == "end-test") {
+		return stopTest(socket, obj, err);
+    }
 	else if (type == "transfer-method") {
 		return transferMehod(socket, obj, err);
+	}
+	else if (type == "zero") {
+		return zero(socket, obj, err);
 	}
 	return false;
 }
@@ -63,6 +70,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     double constantAngle = 0;
     double constantTorque = 0;
     double cycleCount = 0;
+    double delayTime = 0;
 
     QString dynamicMode = "";
     double torsionFrequency = 0;
@@ -133,6 +141,15 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             return false;
         }
         cycleCount = testModeConfig["cycleCount"].toDouble();
+
+        // delayTime
+        if (testModeConfig["delayTime"].isNull())
+        {
+            qDebug() << "delayTime error";
+            return false;
+        }
+		delayTime = testModeConfig["delayTime"].toDouble();
+
     }
     else if (mode == "dynamic")
     {
@@ -186,27 +203,55 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     }
 
     // 通用参数检查
-    // 扭力归零
-    if (configForm["initialLoadTorque"].isNull())
+    //initialMode
+	if (configForm["initialMode"].isNull())
+	{
+		qDebug() << "initialMode error";
+		return false;
+	}
+	auto initialMode = configForm["initialMode"].toString();
+    //initialLoadValue
+	if (configForm["initialLoadValue"].isNull())
+	{
+		qDebug() << "initialLoadValue error";
+		return false;
+	}
+	double initialLoadValue = configForm["initialLoadValue"].toDouble();
+	//unit
+	if (configForm["unit"].isNull())
+	{
+		qDebug() << "unit error";
+		return false;
+	}
+	QString unit = configForm["unit"].toString();
+	//zeroMode
+     //zeroMode是一个对象数组
+    // 取第一个对象
+    QJsonArray zeroModeArray = configForm["zeroMode"].toArray();
+    if (zeroModeArray.isEmpty())
     {
-        qDebug() << "initialLoadTorque error";
+        qDebug() << "zeroMode array is empty";
         return false;
     }
-    double initialLoadTorque = configForm["initialLoadTorque"].toDouble();
-    // 角度归零
-    if (configForm["initialLoadAngle"].isNull())
+    //遍历取出所有对象，对象是字符串
+    QStringList zeroModeList;
+    for (const QJsonValue& value : zeroModeArray)
     {
-        qDebug() << "initialLoadAngle error";
-        return false;
+        if (value.isString())
+        {
+            QString str = value.toString();
+            zeroModeList.append(str);
+        }
+        else
+        {
+            qDebug() << "zeroMode array contains non-string value";
+            return false;
+        }
     }
-    double initialLoadAngle = configForm["initialLoadAngle"].toDouble();
-    // 变形归零
-    if (configForm["initialLoadDisplacement"].isNull())
-    {
-        qDebug() << "initialLoadDisplacement error";
-        return false;
-    }
-    double initialLoadDisplacement = configForm["initialLoadDisplacement"].toDouble();
+
+
+
+
     // 起始点
     if (configForm["startPoint"].isNull())
     {
@@ -250,11 +295,260 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     }
     double moveSpeed = configForm["moveSpeed"].toDouble();
 
+    //写入通用参数    
+
+    //归零模式
+	QByteArray buffer;
+	buffer.fill(0x00, 528);
+	setCmd(E_Mode::Write, buffer);
+	setLength(0x02, buffer);
+	setAddr(0x0ad4, buffer);
+
+	int16_t mi_Add = 0;
+    //遍历zeroModeList
+    for (int i = 0; i < zeroModeList.length(); i++)
+    {
+        if (zeroModeList[i] == "torqueZero")
+        {
+            //mi_Add的第4个bit写入1
+            mi_Add |= 0x10;
+        }
+        else if (zeroModeList[i] == "angleZero")
+        {
+            //mi_Add的第1、2个bit写入1
+            mi_Add |= 0x03;
+        }
+        else if (zeroModeList[i] == "angleZeroAndTorqueZero") {
+            //mi_Add的第3个bit写入1
+
+            mi_Add |= 0x08;
+        }
+    }
+
+    buffer[12] = int8_t((mi_Add & 0x000000FF));
+    buffer[13] = int8_t((mi_Add & 0x0000FF00) >> 8);
+    calcSum(buffer);
+
+    if (!socket->writeData(buffer)) {
+        err = "writeData error " + socket->socketError();
+        return false;
+    }
+    QByteArray recvData;
+    if (!socket->readData(recvData)) {
+        err = "readData error " + socket->socketError();
+        return false;
+    }
+    if (!checkSum(recvData)) {
+        err = "readData error ,checksum error";
+        return false;
+    }
+   
+	//写入初始负载值
+	if (!writeFloat(socket, 0x0a2c, initialLoadValue, err))
+		return false;
+
+
+    //写入起始点
+	if (!writeFloat(socket, 0x0A44, startPoint, err))
+		return false;
+
+    //写入结束点
+	if (!writeFloat(socket, 0x0A48, endCondition, err))
+		return false;
+
+	//写入最大扭力
+	if (!writeFloat(socket, 0x0A60, maxTorque, err))
+		return false;
+	//写入最大角度
+	if (!writeFloat(socket, 0x0A64, maxAngle, err))
+		return false;
+	//写入断裂敏感度
+	if (!writeFloat(socket, 0x0A30, breakSensitivity, err))
+		return false;
+    //写入定速
+	if (!writeInt16(socket, 0x1402, 0x0000, err))
+		return false;
+	//写入移动速度
+	if (!writeFloat(socket, 0x1408, moveSpeed, err))
+		return false;
+
+
+    int16_t mi_PC_TEST_2 = 0;
+    //写入单位
+    if (unit == "N") {
+        //第5个bit置为0
+        mi_PC_TEST_2 &= 0xDF;
+    }
+    else if (unit == "mm") {
+        //第5个bit写入1
+        mi_PC_TEST_2 |= 0x20;
+    }
+    else {
+        err = "unit error";
+        return false;
+    }
+    if (!writeInt16(socket, 0x0A7A, mi_PC_TEST_2, err))
+        return false;
+
+    //指定缓冲区的记录来源
+	int16_t REC_SOURCE = 0x0000;
+
+	REC_SOURCE |= 0x0F;
+    if (!writeInt16(socket, 0x0b42, REC_SOURCE, err)) {
+		err = "writeInt16 error " + socket->socketError();
+		return false;
+    }
+	//写入采样频率
+	int32_t mi_SampleRate = 1;//5K的采样率
+    if (!writeInt32(socket, 0x080c, mi_SampleRate, err)) {
+        err = "writeInt32 error " + socket->socketError();
+        return false;
+    }
+
+
+
+ //   buffer.clear();
+	//packPC_KEY(0x14, buffer);
+	//if (!socket->writeData(buffer)) {
+	//	err = "writeData error " + socket->socketError();
+	//	return false;
+	//}
+	//recvData.clear();
+	//if (!socket->readData(recvData)) {
+	//	err = "readData error " + socket->socketError();
+	//	return false;
+	//}
+	//if (!checkSum(recvData)) {
+	//	err = "readData error ,checksum error";
+	//	return false;
+	//}
+
+
+	//设置测试后的动作
+	int16_t PC_TEST_3 = 0;
+	//第4个bit置为1
+	PC_TEST_3 |= 0x10;
+	if (!writeInt16(socket, 0x0A7C, PC_TEST_3, err)) {
+		err = "writeInt16 error " + socket->socketError();
+		return false;
+	}
+
     QVector< DF_SET>  dfSets;
-    DF_SET df_set;
     // TODO
     // 把方法设定传至DF SET方法设定中
+    if (mode == "static") {
+        DF_SET df_set;
 
+		if (staticMode == "torque")
+		{
+			df_set.IR_TYPE = 2;
+		}
+		else if (staticMode == "angle")
+		{
+			df_set.IR_TYPE = 1;
+		}
+		else
+		{
+			err = "staticMode error";
+			return false;
+		}
+        df_set.DF_SIGNAL = 4;
+
+		if (torsionUnit == "degree_per_min")
+		{
+			df_set.DF_SP_UNIT = 2;
+		}
+		else if (torsionUnit == "n_per_min")
+		{
+			df_set.DF_SP_UNIT = 1;
+		}
+		else
+		{
+			err = "unit error";
+			return false;
+		}
+
+		df_set.DF_IR = constantAngle;
+		df_set.DF_HZ = torsionSpeed;
+
+        //第一个步骤
+		dfSets.push_back(df_set);
+
+        //加入延迟
+        DF_SET df_set_delay;
+        df_set_delay.IR_TYPE = 3;
+        df_set_delay.DF_END_TIME = delayTime;
+        dfSets.push_back(df_set_delay);
+
+
+		//第二个步骤
+		DF_SET df_set_second;
+        df_set_second = df_set;
+        df_set_second.DF_IR = -constantAngle;        
+        dfSets.push_back(df_set_second);
+
+        dfSets.push_back(df_set_delay);
+
+
+        DF_SET df_set_loop;
+        df_set_loop.IR_TYPE = 4;
+        df_set_loop.DF_END_CYCLE = cycleCount;
+        df_set_loop.JUMP_NO = 0;
+        dfSets.push_back(df_set_loop);
+    }
+    else if (mode == "dynamic")
+    {
+        if (dynamicMode == "sin") {
+            DF_SET df_set;
+
+            df_set.IR_TYPE = 1;
+            df_set.DF_SIGNAL = 4;
+            df_set.DF_SP_UNIT = 2;
+
+            df_set.DF_IR = 0;
+            df_set.DF_HZ = 30;
+
+            
+            //如果是第一个步骤，先位移0mm
+            dfSets.push_back(df_set);
+        }
+
+
+        DF_SET df_set;
+
+        if (staticMode == "torque")
+        {
+            df_set.IR_TYPE = 2;
+        }
+        else if (staticMode == "angle")
+        {
+            df_set.IR_TYPE = 1;
+        }
+        else
+        {
+            err = "staticMode error";
+            return false;
+        }
+
+		if (dynamicMode == "triangle")
+		{
+            df_set.DF_SIGNAL = 1;
+		}
+		else if (dynamicMode == "sin")
+		{
+            df_set.DF_SIGNAL = 0;
+		}
+
+        df_set.DF_SP_UNIT = 2;
+
+        df_set.DF_IR = constantAngle;
+        df_set.DF_HZ = torsionFrequency;
+
+        //第一个步骤
+        dfSets.push_back(df_set);
+
+        
+    }
     /*
     *STEP#2
     * 遍历方法的每组设定信息
@@ -262,16 +556,16 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     */
     for (int i = 0; i <= dfSets.length(); i++) {
         if (i != dfSets.length()) {
+			dfSets[i].mui_GroupNo = i;
             if (!perSetDfSet(socket, dfSets[i], err))
                 return false;
             continue;
         }
         //写完最后一个DF SET，写入结束数据
         DF_SET tmp;
-        tmp.mui_TEST_MODE = 0;
-        tmp.mui_IR_TEMP = 0;
-        tmp.mi_TEST_EndTime = 0;
         tmp.mui_GroupNo = i;
+        //tmp.IR_TYPE = 0;
+        tmp.IR_TYPE = 99;
         if (!perSetDfSet(socket, tmp, err))
             return false;
     }
@@ -281,13 +575,13 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     旧版代码中有此命令,搬运此段逻辑
     */
 
-    QByteArray buffer;
+	buffer.clear();
     packPC_KEY(0x3a, 0, buffer);//这里，就是一直下发不了温度的原因
     if (!socket->writeData(buffer)) {
         err = "writeData error " + socket->socketError();
         return false;
     }
-    QByteArray recvData;
+    recvData.clear();
     if (!socket->readData(recvData)) {
         err = "readData error " + socket->socketError();
         return false;
@@ -322,25 +616,27 @@ bool ControlTestCommHandler::perSetDfSet(CommunicationThread* socket, DF_SET& df
     buffer[4 + mi_Add] = int8_t((df_set.mui_GroupNo & 0x00FF));
     buffer[5 + mi_Add] = int8_t((df_set.mui_GroupNo & 0xFF00) >> 8);
 
-    buffer[6 + mi_Add] = int8_t((df_set.mui_DISCARD_SAMPLE & 0x00FF));
-    buffer[7 + mi_Add] = int8_t((df_set.mui_DISCARD_SAMPLE & 0xFF00) >> 8);
 
-    buffer[8 + mi_Add] = int8_t((df_set.mui_TEST_MODE & 0x00FF));
-    buffer[9 + mi_Add] = int8_t((df_set.mui_TEST_MODE & 0xFF00) >> 8);
 
-    buffer[10 + mi_Add] = int8_t((df_set.mui_SAMPLE & 0x00FF));
-    buffer[11 + mi_Add] = int8_t((df_set.mui_SAMPLE & 0xFF00) >> 8);
+    buffer[6 + mi_Add] = int8_t((df_set.ZERO_DEVICE & 0x00FF));
+    buffer[7 + mi_Add] = int8_t((df_set.ZERO_DEVICE & 0xFF00) >> 8);
 
+    buffer[8 + mi_Add] = int8_t((df_set.IR_TYPE & 0x00FF));
+    buffer[9 + mi_Add] = int8_t((df_set.IR_TYPE & 0xFF00) >> 8);
+
+    buffer[10 + mi_Add] = int8_t((df_set.DF_SIGNAL & 0x00FF));
+    buffer[11 + mi_Add] = int8_t((df_set.DF_SIGNAL & 0xFF00) >> 8);
+   
 
     if (isLitteEndian()) {
-        char* ptr = reinterpret_cast<char*>(&df_set.md_IR_CPM);
+        char* ptr = reinterpret_cast<char*>(&df_set.DF_HZ);
         buffer[12 + mi_Add] = ptr[0];
         buffer[13 + mi_Add] = ptr[1];
         buffer[14 + mi_Add] = ptr[2];
         buffer[15 + mi_Add] = ptr[3];
     }
     else {
-        char* ptr = reinterpret_cast<char*>(&df_set.md_IR_CPM);
+        char* ptr = reinterpret_cast<char*>(&df_set.DF_HZ);
         buffer[12 + mi_Add] = ptr[3];
         buffer[13 + mi_Add] = ptr[2];
         buffer[14 + mi_Add] = ptr[1];
@@ -349,50 +645,42 @@ bool ControlTestCommHandler::perSetDfSet(CommunicationThread* socket, DF_SET& df
 
 
     if (isLitteEndian()) {
-        char* ptr = reinterpret_cast<char*>(&df_set.md_IR_ANG);
+        char* ptr = reinterpret_cast<char*>(&df_set.DF_IR);
         buffer[16 + mi_Add] = ptr[0];
         buffer[17 + mi_Add] = ptr[1];
         buffer[18 + mi_Add] = ptr[2];
         buffer[19 + mi_Add] = ptr[3];
     }
     else {
-        char* ptr = reinterpret_cast<char*>(&df_set.md_IR_ANG);
+        char* ptr = reinterpret_cast<char*>(&df_set.DF_IR);
         buffer[16 + mi_Add] = ptr[3];
         buffer[17 + mi_Add] = ptr[2];
         buffer[18 + mi_Add] = ptr[1];
         buffer[19 + mi_Add] = ptr[0];
     }
+  
 
-    int mi_tempmin, mi_tempHour;
-    long time;
-    mi_tempmin = (df_set.mi_CONTROL_TIME / 60) % 60;
-    mi_tempHour = df_set.mi_CONTROL_TIME / 3600;
-    time = (df_set.mi_CONTROL_TIME % 60) * 1000 + mi_tempmin * 0x010000 + mi_tempHour * 0x01000000;
-    buffer[20 + mi_Add] = int8_t((time & 0x00FF));
-    buffer[21 + mi_Add] = int8_t((time & 0xFF00) >> 8);
-    buffer[22 + mi_Add] = int8_t((time & 0xFF0000) >> 16);
-    buffer[23 + mi_Add] = int8_t((time & 0xFF000000) >> 24);
+    buffer[20 + mi_Add] = int8_t((df_set.DF_END_CYCLE & 0x00FF));
+    buffer[21 + mi_Add] = int8_t((df_set.DF_END_CYCLE & 0xFF00) >> 8);
+    buffer[22 + mi_Add] = int8_t((df_set.DF_END_CYCLE & 0xFF0000) >> 16);
+    buffer[23 + mi_Add] = int8_t((df_set.DF_END_CYCLE& 0xFF000000) >> 24);
 
-    mi_tempmin = (df_set.mi_TEST_EndTime / 60) % 60;
-    mi_tempHour = df_set.mi_TEST_EndTime / 3600;
-    time = (df_set.mi_TEST_EndTime % 60) * 1000 + mi_tempmin * 0x010000 + mi_tempHour * 0x01000000;
+    buffer[24 + mi_Add] = int8_t((df_set.DF_END_TIME & 0x00FF));
+    buffer[25 + mi_Add] = int8_t((df_set.DF_END_TIME & 0xFF00) >> 8);
+    buffer[26 + mi_Add] = int8_t((df_set.DF_END_TIME & 0xFF0000) >> 16);
+    buffer[27 + mi_Add] = int8_t((df_set.DF_END_TIME & 0xFF000000) >> 24);
 
-    buffer[24 + mi_Add] = int8_t((time & 0x00FF));
-    buffer[25 + mi_Add] = int8_t((time & 0xFF00) >> 8);
-    buffer[26 + mi_Add] = int8_t((time & 0xFF0000) >> 16);
-    buffer[27 + mi_Add] = int8_t((time & 0xFF000000) >> 24);
+    buffer[28 + mi_Add] = int8_t((df_set.JUMP_NO & 0x00FF));
+    buffer[29 + mi_Add] = int8_t((df_set.JUMP_NO & 0xFF00) >> 8);
 
-    buffer[28 + mi_Add] = int8_t((df_set.mui_IR_TEMP & 0x00FF));
-    buffer[29 + mi_Add] = int8_t((df_set.mui_IR_TEMP & 0xFF00) >> 8);
+    buffer[30 + mi_Add] = int8_t((df_set.DF_SP_UNIT & 0x00FF));
+    buffer[31 + mi_Add] = int8_t((df_set.DF_SP_UNIT & 0xFF00) >> 8);
 
-    buffer[30 + mi_Add] = int8_t((df_set.mui_TEMP_TOLERANCE & 0x00FF));
-    buffer[31 + mi_Add] = int8_t((df_set.mui_TEMP_TOLERANCE & 0xFF00) >> 8);
+    buffer[32 + mi_Add] = int8_t((df_set.MEM_NO & 0x00FF));
+    buffer[33 + mi_Add] = int8_t((df_set.MEM_NO & 0xFF00) >> 8);
 
-    buffer[32 + mi_Add] = int8_t((df_set.mui_MDR_FLAG & 0x00FF));
-    buffer[33 + mi_Add] = int8_t((df_set.mui_MDR_FLAG & 0xFF00) >> 8);
-
-    buffer[34 + mi_Add] = int8_t((df_set.mui_STABLE_TIME & 0x00FF));
-    buffer[35 + mi_Add] = int8_t((df_set.mui_STABLE_TIME & 0xFF00) >> 8);
+    buffer[34 + mi_Add] = int8_t((0 & 0x00FF));
+    buffer[35 + mi_Add] = int8_t((0& 0xFF00) >> 8);
 
     calcSum(buffer);
     if (!socket->writeData(buffer)) {
@@ -412,7 +700,33 @@ bool ControlTestCommHandler::perSetDfSet(CommunicationThread* socket, DF_SET& df
 }
 
 
+bool ControlTestCommHandler::stopTest(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+
+
+    QByteArray buffer;
+    packPC_KEY(0x04, buffer);
+    if (!socket->writeData(buffer)) {
+        err = "writeData error " + socket->socketError();
+        return false;
+    }
+    QByteArray recvData;
+    if (!socket->readData(recvData)) {
+        err = "readData error " + socket->socketError();
+        return false;
+    }
+    if (!checkSum(recvData)) {
+        err = "readData error ,checksum error";
+        return false;
+    }
+    return true;
+}
+
+
+
+
 bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+
+
 	QByteArray buffer;
 	packPC_KEY(0x05, buffer);
 	if (!socket->writeData(buffer)) {
@@ -431,7 +745,38 @@ bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject&
 	return true;
 }
 
+
+bool ControlTestCommHandler::zero(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+
+    QByteArray buffer;
+
+    buffer.clear();
+    packPC_KEY(0x06,0x1E, buffer);
+    if (!socket->writeData(buffer)) {
+        err = "writeData error " + socket->socketError();
+        return false;
+    }
+    QByteArray recvData;
+    if (!socket->readData(recvData)) {
+        err = "readData error " + socket->socketError();
+        return false;
+    }
+    if (!checkSum(recvData)) {
+        err = "readData error ,checksum error";
+        return false;
+    }
+	return true;
+}
+
 bool ControlTestCommHandler::home(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+
+
+
+    if (!writeInt32(socket, 0X092E, 0X0800, err)) {
+        return false;
+    }
+    return true;
+
 	QByteArray buffer;
 	packPC_KEY(0x30, buffer);
 	if (!socket->writeData(buffer)) {
@@ -453,7 +798,7 @@ bool ControlTestCommHandler::home(CommunicationThread* socket, QJsonObject& obj,
 
 bool ControlTestCommHandler::stop(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 	QByteArray buffer;
-	packPC_KEY(0x04, buffer);
+	packPC_KEY(0x21, buffer);
 	if (!socket->writeData(buffer)) {
 		err = "writeData error " + socket->socketError();
 		return false;
@@ -471,8 +816,98 @@ bool ControlTestCommHandler::stop(CommunicationThread* socket, QJsonObject& obj,
 }
 
 bool ControlTestCommHandler::spin(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+
+	writeInt32(socket, 0X1102, 0, err);
+    {
+        QByteArray buffer;
+        buffer.fill(0x00, 528);
+        setCmd(E_Mode::Write, buffer);
+        setLength(0x04, buffer);
+        setAddr(0x1108, buffer);
+
+
+        float speed = 10;
+
+        if (isLitteEndian()) {
+            char* ptr = reinterpret_cast<char*>(&speed);
+            buffer[12] = ptr[0];
+            buffer[13] = ptr[1];
+            buffer[14] = ptr[2];
+            buffer[15] = ptr[3];
+        }
+        else {
+            char* ptr = reinterpret_cast<char*>(&speed);
+            buffer[12] = ptr[3];
+            buffer[13] = ptr[2];
+            buffer[14] = ptr[1];
+            buffer[15] = ptr[0];
+        }
+
+        calcSum(buffer);
+
+        if (!socket->writeData(buffer)) {
+            err = "writeData error " + socket->socketError();
+            return false;
+        }
+        QByteArray recvData;
+        if (!socket->readData(recvData)) {
+            err = "readData error " + socket->socketError();
+            return false;
+        }
+        if (!checkSum(recvData)) {
+            err = "readData error ,checksum error";
+            return false;
+        }
+//        return true;
+    }
+
+    {
+        QByteArray buffer;
+        buffer.fill(0x00, 528);
+        setCmd(E_Mode::Read, buffer);
+        setLength(0x04, buffer);
+        setAddr(0x1108, buffer);
+        calcSum(buffer);
+        if (!socket->writeData(buffer)) {
+            err = "writeData error " + socket->socketError();
+            return false;
+        }
+        QByteArray recvData;
+        if (!socket->readData(recvData)) {
+            err = "readData error " + socket->socketError();
+            return false;
+        }
+        if (!checkSum(recvData)) {
+            err = "readData error ,checksum error";
+            return false;
+        }
+
+        /**
+         * 判断数据正确性
+         *
+         */
+        if ((recvData[4] & 0xff) != 0x52 || (recvData[5] & 0xff) != 0x44 || (recvData[6] & 0xff) != 0x04) {
+            err = "readData error ,data error";
+            return false;
+        }
+
+        char beginAddr = 0x01;
+        int temp = (recvData[12 + beginAddr] & 0xff) +
+            (recvData[12 + beginAddr+1] & 0xff) * 0x100 +
+            (recvData[12 + beginAddr+2] & 0xff) * 0x10000 +
+            (recvData[12 + beginAddr+3] & 0xff) * 0x1000000;
+		qDebug() << "spin temp" << temp;
+		if (temp == 0) {
+			err = "spin error ,data error";
+			return false;
+		}
+    }
+  
+
+
+
 	QByteArray buffer;
-	packPC_KEY(0x1c, buffer);
+	packPC_KEY(0x22, buffer);
 	if (!socket->writeData(buffer)) {
 		err = "writeData error " + socket->socketError();
 		return false;
@@ -491,7 +926,7 @@ bool ControlTestCommHandler::spin(CommunicationThread* socket, QJsonObject& obj,
 
 bool ControlTestCommHandler::reSpin(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 	QByteArray buffer;
-	packPC_KEY(0x1d, buffer);
+	packPC_KEY(0x23, buffer);
 	if (!socket->writeData(buffer)) {
 		err = "writeData error " + socket->socketError();
 		return false;

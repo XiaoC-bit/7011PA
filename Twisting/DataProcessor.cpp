@@ -42,6 +42,9 @@ DataProcessor::DataProcessor(QObject* parent, int deviceId)
 	lastDoorStatus_ = curDoorStatus_;
 	lastMoldStatus_ = curMoldStatus_;
 
+	last_REAL_MSG_CT_ = cur_REAL_MSG_CT_ = 0;	
+
+
 	queueId_ = -1;
 
 	//配置前端WS消息的通道处理器
@@ -178,6 +181,9 @@ bool DataProcessor::getConfigDb(QSqlDatabase& db) {
 }
 
 
+bool DataProcessor::account(QSqlDatabase& configDb, QSqlDatabase& testDb, bool final) {
+	return true;
+}
 
 
 void DataProcessor::sumupQueue() {
@@ -185,13 +191,138 @@ void DataProcessor::sumupQueue() {
 
 	if (!getConfigDb(configDb))
 		return;
+	//读取report_setting
+	QString strSql = QString("select * from report_setting ");
+	QSqlQuery configQuery(configDb);
+	if (!configQuery.exec(strSql)) {
+		qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+		qDebug() << "deviceId :  " << deviceId_ << "\t" << configDb.lastError().text();
+		return;
+	}
+	QVector<QString> reportSetting;
+	QMap<double, double> torqueToAngle;
+	QMap<double, double> angleToTorque;
+	QMap<double, double> stiffnessAngle;
 
+	std::pair<double, double> torqueToAnglePair;//最大扭矩对应的角度
+	std::pair<double, double> angleToTorquePair;//最大角度对应的扭矩
+	torqueToAnglePair.first = 0;
+	torqueToAnglePair.second = 0;
+	angleToTorquePair.first = 0;
+	angleToTorquePair.second = 0;
+
+
+	while (configQuery.next())
+	{
+		QString name = configQuery.value("name").toString();
+		//如果前面字符串是"torque"
+		if (name.startsWith("torque-")) {
+			//去掉前面字符串
+			name = name.remove(0, 7);
+			torqueToAngle[name.toDouble()] = 0;
+		}
+		//如果前面字符串是"angle"
+		else if (name.startsWith("angle-")) {
+			//去掉前面字符串
+			name = name.remove(0, 6);
+			angleToTorque[name.toDouble()] = 0;
+		}
+		//如果前面字符串是"stiffness"
+		else if (name.startsWith("stiffness-")) {
+			//去掉前面字符串
+			name = name.remove(0, 10);
+			//剩下的格式是 1-2  提取这两个数字，可能是小数
+			QStringList list = name.split("-");
+			if (list.size() != 2) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+				continue;
+			}
+			bool ok1, ok2;
+			double first = list[0].toDouble(&ok1);
+			double second = list[1].toDouble(&ok2);
+			if (!ok1 || !ok2) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+				continue;
+			}
+			stiffnessAngle[first] = 0;
+			stiffnessAngle[second] = 0;
+		}
+
+		reportSetting.push_back(configQuery.value("name").toString());
+	}
 	if (!getTestDataDB(testDataDb))
 		return;
 
 
+#ifdef  _DEBUG
+
+	{
+		reportSetting.clear();
+		strSql = QString("select * from detail where queue_id=%1").arg(queueId_);
+		QSqlQuery testQuery(testDataDb);
+		if (!testQuery.exec(strSql)) {
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+			return;
+		}
+		while (testQuery.next()) {
+			TwistingData twistingData;
+			twistingData.angle = testQuery.value("AD2").toDouble();
+			twistingData.torque = testQuery.value("YZ_mm").toDouble();
+			vecTwistingData_.push_back(twistingData);
+		}
+	}
+
+#endif //  DEBUG
+
+	
+	for (auto& it : vecTwistingData_) {
+		/*QVector<QString> reportSetting;
+		QMap<double, double> torqueToAngle;
+		QMap<double, double> angleToTorque;
+		QMap<double, double> stiffnessAngle;
+		double maxTorque = 0;
+		double maxAngle = 0;*/
+
+
+		//torqueToAnglePair.first = 0;
+		//torqueToAnglePair.second = 0;
+		//angleToTorquePair.first = 0;
+		//angleToTorquePair.second = 0;
+
+		if (it.torque > torqueToAnglePair.first) {
+			torqueToAnglePair.first = it.torque;
+			torqueToAnglePair.second = it.angle;
+		}
+		if (it.angle > angleToTorquePair.first) {
+			angleToTorquePair.first = it.angle;
+			angleToTorquePair.second = it.torque;
+		}			
+	}
+
+	{
+		//插入角度最大值
+		strSql = QString("insert into result(queue_id,name,data) values(%1,'maxAngleToTorque',%2)").arg(queueId_).arg(torqueToAnglePair.second);
+
+		QSqlQuery testQuery(testDataDb);
+		if (!testQuery.exec(strSql)) {
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+			return;
+		}
+
+		//插入扭矩最大值
+		strSql = QString("insert into result(queue_id,name,data) values(%1,'maxTorqueToAngle',%2)").arg(queueId_).arg(angleToTorquePair.second);
+		if (!testQuery.exec(strSql)) {
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+			return;
+		}
+	}
+
+	
 	//将当前测试记录设置为测试结束
-	QString strSql = QString("update queue set status = 2 where id = %1").arg(queueId_);
+	strSql = QString("update queue set status = 2 where id = %1").arg(queueId_);
 	QSqlQuery testQuery(testDataDb);
 	if (!testQuery.exec(strSql)) {
 		qDebug() <<"deviceId :  "<<deviceId_ << "\t" << "Failed to fetch data:";
@@ -306,7 +437,7 @@ void DataProcessor::endTestQueueFunc(const U65RawData& info) {
 }
 
 void DataProcessor::endTestQueue(const U65RawData& info) {
-	endTestQueueFunc(info);
+
 	//结算
 	sumupQueue();	
 }
@@ -425,12 +556,94 @@ void DataProcessor::recordDetail(const U65RawData& info) {
 
 void  DataProcessor::handleRegularInfoFunc(const U65RawData& info) {
 
-	
+
+	if (lastTesting_) {
+		//数据异常,不记录任何数据
+		if (!flag_)
+			return;
+		
+		if (cur_REAL_MSG_CT_ != 0) {
+			QSqlDatabase testDataDb;
+			if (!getTestDataDB(testDataDb)) {
+				qDebug() << "getTestDataDB";
+				return;
+			}
+			QSqlQuery query(testDataDb);
+
+			QString strSql = QString("begin transaction");
+			if (!query.exec(strSql)) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << query.lastError().text();
+				return;
+			}
+
+			for (int i = 0; i < cur_REAL_MSG_CT_ - last_REAL_MSG_CT_ && i < 12; i++) {
+				float YZ_MM =
+					info.U65Info.YZ_MM[(last_REAL_MSG_CT_ + i) % 12];
+				float AD1 =
+					info.U65Info.AD1[(last_REAL_MSG_CT_ + i) % 12];
+				float AD2 =
+					info.U65Info.AD2[(last_REAL_MSG_CT_ + i) % 12];
+
+				TwistingData twistingData;
+				twistingData.angle = AD2;
+				twistingData.torque = YZ_MM;
+				twistingData.axialDisplacement = AD1;
+				vecTwistingData_.push_back(twistingData);
+
+				strSql = QString("insert into detail(queue_id,AD1,AD2,YZ_mm,flow_number) values(%1,%2,%3,%4,%5)")
+					.arg(queueId_)
+					.arg(AD1)
+					.arg(AD2)
+					.arg(YZ_MM)
+					.arg(last_REAL_MSG_CT_ + i);
+				if (!query.exec(strSql)) {
+					qDebug() << "deviceId :  " << deviceId_ << "\t" << query.lastError().text();
+
+
+					if (!query.exec("rollback")) {
+						qDebug() << "deviceId :  " << deviceId_ << "\t" << query.lastError().text();
+						return;
+					}
+
+					return;
+				}
+
+			}
+
+			strSql = QString("COMMIT");
+			if (!query.exec(strSql)) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << query.lastError().text();
+				return;
+			}
+
+		}
+
+
+		if (!curTesting_)
+			return endTestQueue(info);
+	}
+	else if (curTesting_) {
+
+		startTime_ = 0;
+		last_REAL_MSG_CT_ = 0;
+
+		flag_ = true;
+		return beginTestQueue(info);
+	}
+
+	return;
+
+
 
 	if (lastTesting_) {
 		//数据异常,不记录任何数据
 		if (!flag_) 
 			return;
+
+
+
+
+		return;
 
 		//结算当前测试记录
 		if (!curTesting_) 			
@@ -482,6 +695,8 @@ void DataProcessor::beginTestQueue(const U65RawData& info) {
 	if (!flag_) {
 		qDebug() << "error";
 	}
+
+	vecTwistingData_.clear();
 }
 
 
@@ -517,45 +732,27 @@ bool DataProcessor::beginInternalTest() {
 * @param data
 */
 void DataProcessor::handleRegularInfo(const QVariant& data) {
+
+	if(0)
+	{
+		queueId_ = 3;
+
+		sumupQueue();
+	}
+
 	//QThread::msleep(600);
 	// 
 	//转换数据类型
 	U65RawData info = data.value<U65RawData>();
 
-	do {
-		long long timeOut = 2000;
-		auto end = std::chrono::high_resolution_clock::now();
-
-		checkcurMoldStatus_ = ((info.U65Info.IO1_IN >> 2) & 0x01) ? MOLD_STATUS::UP : MOLD_STATUS::DOWN;
-
-		auto tmpLastStatus = checklastMoldStatus_;
-		checklastMoldStatus_ = checkcurMoldStatus_;
-
-		if (checkcurMoldStatus_ == MOLD_STATUS::DOWN) {
-			//如果是合模状态，不需要过滤
-			break;
-		}
-
-		if (tmpLastStatus == MOLD_STATUS::DOWN) {
-			//当前开模，但是上次是合模
-			startTestingTime = std::chrono::high_resolution_clock::now();
-			return;
-		}
-
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - startTestingTime);
-		if (duration.count() < timeOut) {
-			//开模时间未到
-			qDebug() << "3sec recv error open status";
-			return;
-		}
-	} while (0);
-
-
-
 	//更新本次循环的状态
 	curDoorStatus_ = ((info.U65Info.U65_MSG3 >> 9) & 0x01) ? DOOR_STATUS::CLOSE : DOOR_STATUS::OPEN;
 	curMoldStatus_ = ((info.U65Info.IO1_IN >> 2) & 0x01) ? MOLD_STATUS::UP : MOLD_STATUS::DOWN;
 	curTesting_ = info.isTesting();
+
+	
+
+	cur_REAL_MSG_CT_ = info.U65Info.REAL_MSG_CT;
 
 	if (lastDoorStatus_ != curDoorStatus_ || 
 		curMoldStatus_ != lastMoldStatus_ ||
@@ -574,24 +771,40 @@ void DataProcessor::handleRegularInfo(const QVariant& data) {
 		}
 		else
 			qDebug() <<"deviceId :  "<<deviceId_ << "\t" << "Mold Down";
-		if (curTesting_)
-			qDebug() <<"deviceId :  "<<deviceId_ << "\t" << "testing";
+		if (curTesting_) {
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << "testing";
+		}
 		else
 			qDebug() <<"deviceId :  "<<deviceId_ << "\t" << "nottesting ";
+
+		/*qDebug() << "U65Info.U65_MODE" << info.U65Info.U65_MODE;
+		qDebug() << "U65Info.U65_MSG" << info.U65Info.U65_MSG;*/
+
 	}
 
 
+	/*qDebug() << "catch cur_REAL_MSG_CT_" << cur_REAL_MSG_CT_;*/
 
 	//recordDetail(info);
 
-
 	//处理数据
 	handleRegularInfoFunc(info);
+
+
+	//float AD1[12];//轴向位移
+	//float X[12];//扭矩输出
+	//float YZ_MM[12];//编码器反馈的扭矩
+	//float AD2[12];//角度
+
+
+
+	
 
 	//记录上一次的状态
 	lastDoorStatus_ = curDoorStatus_;
 	lastMoldStatus_ = curMoldStatus_;
 	lastTesting_ = curTesting_;
+	last_REAL_MSG_CT_ = cur_REAL_MSG_CT_;
 }
 
 /**
