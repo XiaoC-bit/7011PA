@@ -1,6 +1,7 @@
 #ifndef _DATA_DEFINE_H
 #define _DATA_DEFINE_H
 #include <qstring.h>
+#include "lttb.hpp"
 
 struct Config{
 	int debugPort;//前端调试端口
@@ -222,6 +223,22 @@ struct U65RawData {
 };
 Q_DECLARE_METATYPE(U65RawData);
 
+//图表数据，用于LTTB
+struct ExamplePoint {
+	double AD1;//变形
+	double AD2;//角度
+	double YZ_mm;//扭矩
+	int id;
+};
+
+using LttbAD2_YZmm = LargestTriangleThreeBuckets<ExamplePoint, double,
+	&ExamplePoint::AD2,
+	&ExamplePoint::YZ_mm>;
+
+
+using LttbAD2_AD1 = LargestTriangleThreeBuckets<ExamplePoint, double,
+	&ExamplePoint::AD2,
+	&ExamplePoint::AD1>;
 
 
 

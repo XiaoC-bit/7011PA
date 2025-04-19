@@ -93,4 +93,30 @@ bool MsgHandler::getTestDataDB(QSqlDatabase& db) {
 }
 
 
+bool MsgHandler::getTestDataDB(QSqlDatabase& db,int deviceId) {
+	QSqlDatabase configDb;
+	if (!getConfigDB(configDb))
+		return false;
+	QString strSql = QString("select current_project,current_method from system_config where id=%1").arg(deviceId);
+	QString strProject, strMethod;
+	QSqlQuery configQuery(configDb);
+	if (!configQuery.exec(strSql)) {
+		qDebug() << "Failed to fetch data:";
+		qDebug() << configQuery.lastError().text();
+		return false;
+	}
+	if (configQuery.next()) {
+		strProject = configQuery.value("current_project").toString();
+		strMethod = configQuery.value("current_method").toString();
+	}
+
+	if (!getTestDataDB(strProject, strMethod, db)) {
+		qDebug() << "Failed to fetch data:";
+		qDebug() << configQuery.lastError().text();
+		return false;
+	}
+	return true;
+}
+
+
 

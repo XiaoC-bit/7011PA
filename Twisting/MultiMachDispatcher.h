@@ -35,6 +35,8 @@ private:
 	int getDeviceId();
 	QVector< DEVICE_INFO> devices();
 
+	void init();
+
 signals:
 	void forwardToDataProcessor1(const QJsonObject& obj);
 	void forwardToDataProcessor2(const QJsonObject& obj);

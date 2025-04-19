@@ -110,6 +110,7 @@
     <ClCompile Include="CommHandler.cpp" />
     <ClCompile Include="CommunicationThread.cpp" />
     <ClCompile Include="ControlTestCommHandler.cpp" />
+    <ClCompile Include="DataDefine.cpp" />
     <ClCompile Include="DataProcessor.cpp" />
     <ClCompile Include="MethodHandler.cpp" />
     <ClCompile Include="MsgHandler.cpp" />
@@ -139,6 +140,7 @@
     <ClInclude Include="DownloadManager.h" />
     <QtMoc Include="wsmsgdispatcher.h" />
     <QtMoc Include="CefViewWidget.h" />
+    <ClInclude Include="dummyMemo.h" />
     <ClInclude Include="dumpfile.h" />
     <QtMoc Include="MultiMachDispatcher.h" />
     <QtMoc Include="MsgHandler.h" />
@@ -149,7 +151,15 @@
     <QtMoc Include="TestingHandler.h" />
     <QtMoc Include="ReportHandler.h" />
     <QtMoc Include="PIDCommHandler.h" />
+    <ClInclude Include="lttb.hpp" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="ToolDefine.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Twisting.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\logo - 副本.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

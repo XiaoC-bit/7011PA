@@ -28,6 +28,19 @@ private:
 	//导出数据
 	[[nodiscard]] bool exportData(const QSqlDatabase& configDb, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
 
+	//导出历史数据
+	[[nodiscard]] bool exportHistoryData(const QSqlDatabase& configDb, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
+
+
 	//查询报告数据
 	[[nodiscard]] bool fetchReportData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
+
+	//查询历史数据
+	[[nodiscard]] bool fetchHistoryData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
+
+	//查询测试详情
+	[[nodiscard]] bool fetchTestHistoryDetail(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
+
+	//查询报告历史数据
+	[[nodiscard]] bool fetchReportHistoryData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
 };

@@ -54,6 +54,9 @@
     <Filter Include="Data\Report">
       <UniqueIdentifier>{7f049380-3d6f-48f9-a20c-347dd90383b2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{bcb7bd4d-e305-4f81-9679-6121a43a3773}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="Twisting.qrc">
@@ -124,6 +127,9 @@
     <ClCompile Include="PIDCommHandler.cpp">
       <Filter>U70\Channel</Filter>
     </ClCompile>
+    <ClCompile Include="DataDefine.cpp">
+      <Filter>Type</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DownloadManager.h">
@@ -137,6 +143,15 @@
     </ClInclude>
     <ClInclude Include="DataDefine.h">
       <Filter>Type</Filter>
+    </ClInclude>
+    <ClInclude Include="dummyMemo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lttb.hpp">
+      <Filter>Math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -185,5 +200,15 @@
     <QtMoc Include="PIDCommHandler.h">
       <Filter>U70\Channel</Filter>
     </QtMoc>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Twisting.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\logo - 副本.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

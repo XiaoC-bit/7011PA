@@ -100,9 +100,16 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 
 
 	obj["twistCount"] = (recvData[12 + 0xD0] & 0xff) +
-						(recvData[12 + 0xD1] & 0xff) * 0x100 +
-						(recvData[12 + 0xD2] & 0xff) * 0x10000 +
-						(recvData[12 + 0xD3] & 0xff) * 0x1000000;//扭转机  测试次数
+		(recvData[12 + 0xD1] & 0xff) * 0x100 +
+		(recvData[12 + 0xD2] & 0xff) * 0x10000 +
+		(recvData[12 + 0xD3] & 0xff) * 0x1000000;//扭转机  测试次数
+
+
+	obj["twistCount_SIN"] = (recvData[12 + 0x94] & 0xff) +
+		(recvData[12 + 0x95] & 0xff) * 0x100 +
+		(recvData[12 + 0x96] & 0xff) * 0x10000 +
+		(recvData[12 + 0x97] & 0xff) * 0x1000000;//扭转机  测试次数
+
 
 	Hex32 = (recvData[12 + 0x34] & 0xff) +
 		(recvData[12 + 0x35] & 0xff) * 0x100 +

@@ -206,6 +206,12 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
     }
     else if (mode == "dynamic")
     {
+        if (testModeConfig["cycleCount"].isNull())
+        {
+            qDebug() << "cycleCount error";
+            return false;
+        }
+        cycleCount = testModeConfig["cycleCount"].toDouble();
         if (testModeConfig["dynamicMode"].isNull())
         {
             qDebug() << "dynamicMode error";
@@ -612,6 +618,12 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
     }
     else if (mode == "dynamic")
     {
+        if (testModeConfig["cycleCount"].isNull())
+        {
+            qDebug() << "cycleCount error";
+            return false;
+        }
+        cycleCount = testModeConfig["cycleCount"].toDouble();
         if (testModeConfig["dynamicMode"].isNull())
         {
             qDebug() << "dynamicMode error";

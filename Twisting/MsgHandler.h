@@ -36,6 +36,8 @@ public:
 	bool getTestDataDB(QSqlDatabase& db);
 
 
+	bool getTestDataDB(QSqlDatabase& db,int deviceId);
+
 	/**
 	 * 对前端请求进行响应处理.
 	 * 

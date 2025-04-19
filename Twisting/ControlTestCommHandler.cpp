@@ -153,6 +153,15 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     }
     else if (mode == "dynamic")
     {
+
+
+        if (testModeConfig["cycleCount"].isNull())
+        {
+            qDebug() << "cycleCount error";
+            return false;
+        }
+        cycleCount = testModeConfig["cycleCount"].toDouble();
+
         if (testModeConfig["dynamicMode"].isNull())
         {
             qDebug() << "dynamicMode error";
@@ -368,9 +377,9 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     //写入定速
 	if (!writeInt16(socket, 0x1402, 0x0000, err))
 		return false;
-	//写入移动速度
-	if (!writeFloat(socket, 0x1408, moveSpeed, err))
-		return false;
+    //写入移动速度
+    if (!writeFloat(socket, 0x1108, moveSpeed, err))
+        return false;
 
 
     int16_t mi_PC_TEST_2 = 0;
@@ -433,6 +442,17 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 		return false;
 	}
 
+    if (mode == "static")
+    {
+        //写入力量上限
+		if (!writeFloat(socket, 0x0A58, (float)maxTorque, err))
+			return false;
+
+        //写入角度上限
+		if (!writeFloat(socket, 0x0A5C, (float)maxAngle, err))
+			return false;
+    }
+
     QVector< DF_SET>  dfSets;
     // TODO
     // 把方法设定传至DF SET方法设定中
@@ -470,6 +490,10 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 
 		df_set.DF_IR = constantAngle;
 		df_set.DF_HZ = torsionSpeed;
+
+        //写入移动速度
+        if (!writeFloat(socket, 0x1408, torsionSpeed, err))
+            return false;
 
         //第一个步骤
 		dfSets.push_back(df_set);
@@ -543,6 +567,8 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 
         df_set.DF_IR = constantAngle;
         df_set.DF_HZ = torsionFrequency;
+        df_set.DF_END_CYCLE = cycleCount;
+        df_set.JUMP_NO = 0;
 
         //第一个步骤
         dfSets.push_back(df_set);
@@ -565,7 +591,14 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         DF_SET tmp;
         tmp.mui_GroupNo = i;
         //tmp.IR_TYPE = 0;
-        tmp.IR_TYPE = 99;
+        if (mode == "destructive") {
+
+            tmp.IR_TYPE = 0;
+        }
+        else {
+            tmp.IR_TYPE = 99;
+
+        }
         if (!perSetDfSet(socket, tmp, err))
             return false;
     }

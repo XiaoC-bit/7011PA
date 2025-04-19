@@ -16,6 +16,8 @@ MultiMachDispatcher::MultiMachDispatcher(QObject *parent)
 	//特殊设备ID，不存在，只是为了和设备的数据库连接实例名称区分
 	setDeviceId(100);
 
+	init();
+
 	auto devs = devices();
 	int count = -1;
 	for (auto it : devs) {
@@ -110,6 +112,28 @@ MultiMachDispatcher::~MultiMachDispatcher()
 		}
 	}
 	
+}
+
+
+void MultiMachDispatcher::init() {
+	QSqlDatabase configDb,testDb;
+	if (!getConfigDB(configDb)) {
+		qDebug() << configDb.lastError().text();
+		return;
+	}
+	if (!getTestDataDB(testDb,1)) {
+		qDebug() << testDb.lastError().text();
+		return;
+	}
+
+	//启动时，将所有机台的当前测试记录设置为0
+	QString strSql = QString("update queue set current = 0,show=0");
+	QSqlQuery query(testDb);
+	if (!query.exec(strSql)) {
+		qDebug() << "deviceId :  " << deviceId_ << "\t" << testDb.lastError().text();
+		return;
+	}
+
 }
 
 void MultiMachDispatcher::fileSelect(QString& fileName) {

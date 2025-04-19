@@ -1,4 +1,5 @@
 <RCC>
-    <qresource prefix="Twisting">
+    <qresource prefix="/Twisting">
+        <file>res/logo.ico</file>
     </qresource>
 </RCC>

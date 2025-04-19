@@ -15,8 +15,7 @@ Twisting::Twisting(QWidget *parent)
     : QMainWindow(parent)
 {
     ui.setupUi(this);
-
-	this->setWindowIcon(QIcon(":/Evolution/res/logo.ico"));
+	this->setWindowIcon(QIcon(":/Twisting/res/logo.ico"));
     this->setWindowTitle("Twisting");
     int minWidth = 1366;
     int minHeigth = 768;

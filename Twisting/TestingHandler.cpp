@@ -303,8 +303,8 @@ bool TestingHandler::transferMethodPreHandle(const QSqlDatabase& configDb, const
 
     strSql = QString("INSERT INTO queue(\
         specimen_name, batch_number, production_date, operator, lab_temperature, \
-        lab_humidity, specimen_number, remarks, method_id,current)\
-         VALUES ('%1','%2', '%3', '%4', %5, %6, %7, '%8', %9,1);")
+        lab_humidity, specimen_number, remarks, method_id,current,show)\
+         VALUES ('%1','%2', '%3', '%4', %5, %6, %7, '%8', %9,1,1);")
                  .arg(specimenName)
                  .arg(batchNumber)
                  .arg(productionDate)
