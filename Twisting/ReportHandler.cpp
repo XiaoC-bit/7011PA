@@ -358,6 +358,7 @@ bool ReportHandler::liveTestingData(const QSqlDatabase& configDb, const QSqlData
 		continue;
     }
 	if (0) {
+
 		//²»¹ýÂË
 		
 		for (auto& it : points) {

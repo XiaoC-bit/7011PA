@@ -64,7 +64,7 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
     specimenName = testModeConfig["specimenName"].toString();
 
 
-    QString specimenNumber;
+    QString specimenNumber = "";
     if (testModeConfig["specimenNumber"].isNull())
     {
         qDebug() << "specimenNumber error";
@@ -131,6 +131,8 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
     double torsionFrequency = 0;
     double stepTime = 0;
 
+    QString direction = "";
+
     if (mode == "destructive")
     {
 
@@ -147,6 +149,16 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
             return false;
         }
         torsionUnit = testModeConfig["torsionUnit"].toString();
+
+
+        if (testModeConfig["direction"].isNull())
+        {
+            qDebug() << "direction error";
+            return false;
+        }
+        direction = testModeConfig["direction"].toString();
+
+
     }
     else if (mode == "static")
     {
@@ -391,8 +403,8 @@ specimen_name,batch_number,production_date,operator,lab_temperature,\
 lab_humidity,mode,torsion_speed,torsion_unit,initial_mode,\
 initial_load_value,unit,zero_mode,start_point,end_condition,\
 max_torque,max_angle,break_sensitivity,move_speed,static_mode,\
-constant_angle,constant_torque,cycle_count,dynamic_mode,torsion_frequency,step_time,specimen_number,remarks,is_current,delay_time) values('%1','%2','%3','%4','%5','%6',%7,%8,\
-'%9',%10,'%11','%12',%13,'%14','%15',%16,%17,%18,%19,%20,%21,'%22',%23,%24,%25,'%26',%27,%28,%29,'%30',%31,%32)")
+constant_angle,constant_torque,cycle_count,dynamic_mode,torsion_frequency,step_time,specimen_number,remarks,is_current,delay_time,direction) values('%1','%2','%3','%4','%5','%6',%7,%8,\
+'%9',%10,'%11','%12',%13,'%14','%15',%16,%17,%18,%19,%20,%21,'%22',%23,%24,%25,'%26',%27,%28,'%29','%30',%31,%32,'%33')")
                  .arg(methodName)
                  .arg(methodRemark)
                  .arg(specimenName)
@@ -424,7 +436,8 @@ constant_angle,constant_torque,cycle_count,dynamic_mode,torsion_frequency,step_t
         .arg(specimenNumber)
         .arg(remarks)
         .arg(1)
-        .arg(delayTime);
+        .arg(delayTime)
+        .arg(direction);
     if (!query.exec(strSql))
     {
         qDebug() << "Failed to fetch data:";
@@ -539,6 +552,7 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
     QString dynamicMode = "";
     double torsionFrequency = 0;
     double stepTime = 0;
+    QString direction = "";
 
     if (mode == "destructive")
     {
@@ -556,6 +570,17 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
             return false;
         }
         torsionUnit = testModeConfig["torsionUnit"].toString();
+
+
+        if (testModeConfig["direction"].isNull())
+        {
+            qDebug() << "direction error";
+            return false;
+        }
+        direction = testModeConfig["direction"].toString();
+
+
+        
     }
     else if (mode == "static")
     {
@@ -802,7 +827,8 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
         step_time = %26,\
         specimen_number = %27,\
         remarks = '%28',\
-        delay_time = %29\
+        delay_time = %29,\
+        direction = '%30'\
         where is_current = 1\
         ")
         .arg(specimenName)
@@ -833,7 +859,9 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
         .arg(stepTime)
         .arg(specimenNumber)
         .arg(remarks)
-        .arg(delayTime);
+        .arg(delayTime)
+        .arg(direction)
+        ;
 
   
     if (!query.exec(strSql))

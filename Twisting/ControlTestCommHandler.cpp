@@ -304,6 +304,16 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     }
     double moveSpeed = configForm["moveSpeed"].toDouble();
 
+
+    if (testModeConfig["direction"].isNull())
+    {
+        qDebug() << "direction error";
+        return false;
+    }
+    QString direction = configForm["direction"].toString();
+
+    
+
     //写入通用参数    
 
     //归零模式
@@ -444,19 +454,50 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 
     if (mode == "static")
     {
-        //写入力量上限
-		if (!writeFloat(socket, 0x0A58, (float)maxTorque, err))
-			return false;
-
-        //写入角度上限
-		if (!writeFloat(socket, 0x0A5C, (float)maxAngle, err))
-			return false;
+       
     }
 
     QVector< DF_SET>  dfSets;
     // TODO
     // 把方法设定传至DF SET方法设定中
-    if (mode == "static") {
+    if (mode == "destructive") {
+        //写入移动速度
+        if (!writeFloat(socket, 0x1408, torsionSpeed, err))
+            return false;
+
+        //写入力量上限
+        if (!writeFloat(socket, 0x0A58, (float)maxTorque, err))
+            return false;
+
+        //写入角度上限
+        if (!writeFloat(socket, 0x0A5C, (float)maxAngle, err))
+            return false;
+
+        //写入移动速度
+        if (!writeFloat(socket, 0x1108, moveSpeed, err))
+            return false;
+
+
+        if (direction == "Forward") {
+            if (!writeFloat(socket, 0x0a10, 0, err))
+                return false;
+        }
+        else if (direction == "Backward") {
+            if (!writeFloat(socket, 0x0a10, 1, err))
+                return false;
+        }
+
+    }
+    else if (mode == "static") {
+
+        //写入力量上限
+        if (!writeFloat(socket, 0x0A58, (float)maxTorque, err))
+            return false;
+
+        //写入角度上限
+        if (!writeFloat(socket, 0x0A5C, (float)maxAngle, err))
+            return false;
+
         DF_SET df_set;
 
 		if (staticMode == "torque")
@@ -488,8 +529,14 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 			return false;
 		}
 
-		df_set.DF_IR = constantAngle;
-		df_set.DF_HZ = torsionSpeed;
+        if (staticMode == "torque")
+        {
+            df_set.DF_IR = constantTorque;
+        }
+        else if (staticMode == "angle")
+        {
+            df_set.DF_IR = constantAngle;
+        }
 
         //写入移动速度
         if (!writeFloat(socket, 0x1408, torsionSpeed, err))
@@ -499,19 +546,35 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 		dfSets.push_back(df_set);
 
         //加入延迟
-        DF_SET df_set_delay;
-        df_set_delay.IR_TYPE = 3;
-        df_set_delay.DF_END_TIME = delayTime;
-        dfSets.push_back(df_set_delay);
+        if (delayTime != 0) {
+            DF_SET df_set_delay;
+            df_set_delay.IR_TYPE = 3;
+            df_set_delay.DF_END_TIME = delayTime;
+            dfSets.push_back(df_set_delay);
+        }
+       
 
 
 		//第二个步骤
 		DF_SET df_set_second;
         df_set_second = df_set;
-        df_set_second.DF_IR = -constantAngle;        
+
+        if (staticMode == "torque")
+        {
+            df_set.DF_IR = -constantTorque;
+        }
+        else if (staticMode == "angle")
+        {
+            df_set.DF_IR = -constantAngle;
+        }  
         dfSets.push_back(df_set_second);
 
-        dfSets.push_back(df_set_delay);
+        if (delayTime != 0) {
+            DF_SET df_set_delay;
+            df_set_delay.IR_TYPE = 3;
+            df_set_delay.DF_END_TIME = delayTime;
+            dfSets.push_back(df_set_delay);
+        }
 
 
         DF_SET df_set_loop;
@@ -565,7 +628,16 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 
         df_set.DF_SP_UNIT = 2;
 
-        df_set.DF_IR = constantAngle;
+
+        if (staticMode == "torque")
+        {
+            df_set.DF_IR = constantTorque;
+        }
+        else if (staticMode == "angle")
+        {
+            df_set.DF_IR = constantAngle;
+        }
+
         df_set.DF_HZ = torsionFrequency;
         df_set.DF_END_CYCLE = cycleCount;
         df_set.JUMP_NO = 0;
