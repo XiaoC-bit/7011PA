@@ -37,6 +37,55 @@ void CommHandler::packPC_KEY(int pc_key, int pc_addr, QByteArray& buffer) {
 	calcSum(buffer);
 }
 
+
+void CommHandler::packPC_KEY(int pc_key, int pc_addr, int16_t data, QByteArray& buffer) {
+	buffer.resize(528);
+	buffer.fill(0x00, 528);
+	setCmd(E_Mode::Write, buffer);
+	setLength(8, buffer);
+	setAddr(0x0902, buffer);
+	buffer[12] = int8_t((pc_key & 0x000000FF));
+	buffer[13] = int8_t((pc_key & 0x0000FF00) >> 8);
+
+	buffer[14] = int8_t((pc_addr & 0x000000FF));
+	buffer[15] = int8_t((pc_addr & 0x0000FF00) >> 8);
+
+
+	buffer[16] = 0x02;
+	buffer[17] = 0x00;
+
+	buffer[18] = int8_t((data & 0x000000FF));
+	buffer[19] = int8_t((data & 0x0000FF00) >> 8);
+
+	calcSum(buffer);
+}
+
+void CommHandler::packPC_KEY(int pc_key, int pc_addr, int32_t data, QByteArray& buffer) {
+	buffer.resize(528);
+	buffer.fill(0x00, 528);
+	setCmd(E_Mode::Write, buffer);
+	setLength(10, buffer);
+	setAddr(0x0902, buffer);
+	buffer[12] = int8_t((pc_key & 0x000000FF));
+	buffer[13] = int8_t((pc_key & 0x0000FF00) >> 8);
+
+	buffer[14] = int8_t((pc_addr & 0x000000FF));
+	buffer[15] = int8_t((pc_addr & 0x0000FF00) >> 8);
+
+
+	buffer[16] = 0x04;
+	buffer[17] = 0x00;
+
+
+
+	buffer[18] = int8_t((data & 0x000000FF));
+	buffer[19] = int8_t((data & 0x0000FF00) >> 8);
+	buffer[20] = int8_t((data & 0x00FF0000) >> 16);
+	buffer[21] = int8_t((data & 0xFF000000) >> 24);
+
+	calcSum(buffer);
+}
+
 bool CommHandler::isLitteEndian() {
 	union tmp
 	{

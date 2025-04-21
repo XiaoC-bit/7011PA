@@ -11,6 +11,7 @@
 #include <qmessagebox.h>
 #include <qfile.h>
 #include <qfiledialog.h>
+#include <unordered_map>
 
 #include "DataDefine.h"
 
@@ -122,56 +123,106 @@ bool ReportHandler::exportHistoryData(const QSqlDatabase& configDb, const QSqlDa
 
 
 bool ReportHandler::exportData(const QSqlDatabase& configDb, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response) {
-    QFile file;
-    QString filter = "CSV files (*.csv)";
-    QString fileName;
-    QTextStream out;
+	QFile file;
+	QString filter = "CSV files (*.csv)";
+	QString fileName;
+	QTextStream out;
 
-    emit fileSelect(fileName);
-    if (fileName.size() == 0)
-        return true;
-    file.setFileName(fileName);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        qDebug() << "Failed to open file for writing:" << fileName;
-        return false;
-    }
-    out.setDevice(&file);
-    out << "CT Number";
-    out << ",";
-    out << "angle";
-    out << ",";
-    out << "torque";
-    out << ",";
-    out << "displacement";
-    out << "\n";
+	emit fileSelect(fileName);
+	if (fileName.size() == 0) return true;
 
-    QSqlQuery testQuery(dataDb);
+	file.setFileName(fileName);
+	if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		qDebug() << "Failed to open file for writing:" << fileName;
+		return false;
+	}
 
-    QString strSql = QString("select * from detail join queue on detail.queue_id = queue.id  where queue.current=1 ");
-    if (!testQuery.exec(strSql)) {
-        qDebug() << "Failed to fetch data:";
-        qDebug() << testQuery.lastError().text();
-        return false;
-    }
-    while (testQuery.next()) {
-        QJsonObject object;
-        double AD2 = testQuery.value("AD2").toDouble();
-        double YZ_mm = testQuery.value("YZ_mm").toDouble();
-        double AD1 = testQuery.value("AD1").toDouble();
-		int CT = testQuery.value("flow_number").toInt();
+	// 设置较大的缓冲区
 
-		out << CT;
-		out << ",";
-		out << AD2;
-		out << ",";
-		out << YZ_mm    ;
-		out << ",";
-		out << AD1;
-		out << "\n";
+	out.setDevice(&file);
 
-    }
+	// 写入CSV表头 (一次性写入)
+	out << "CT Number,angle,torque,displacement\n";
+
+	// 应用SQLite性能优化的PRAGMA指令
+	QSqlQuery pragmaQuery(dataDb);
+
+	// 关闭同步写入 - 速度提升但降低安全性，仅用于导出等非关键操作
+	pragmaQuery.exec("PRAGMA synchronous = OFF");
+
+	// 将日志模式更改为内存模式
+	pragmaQuery.exec("PRAGMA journal_mode = MEMORY");
+
+	// 增加缓存大小
+	pragmaQuery.exec("PRAGMA cache_size = 10000");
+
+	// 关闭临时存储区域 - 减少磁盘I/O
+	pragmaQuery.exec("PRAGMA temp_store = MEMORY");
+
+	// 开启较大的内存映射
+	pragmaQuery.exec("PRAGMA mmap_size = 30000000000");
+
+	// 开始事务
+
+	const int BATCH_SIZE = 50000; // 每批处理50000条记录
+	int offset = 0;
+	bool hasMoreData = true;
+
+	while (hasMoreData) {
+		QSqlQuery testQuery(dataDb);
+		QString strSql = QString("SELECT detail.flow_number, detail.AD2, detail.YZ_mm, detail.AD1 "
+			"FROM detail JOIN queue ON detail.queue_id = queue.id "
+			"WHERE queue.current=1 "
+			"LIMIT %1 OFFSET %2").arg(BATCH_SIZE).arg(offset);
+
+		if (!testQuery.exec(strSql)) {
+			qDebug() << "Failed to fetch data:" << testQuery.lastError().text();
+			file.close();
+			return false;
+		}
+
+		// 收集批量数据然后一次写入
+		QString batchData;
+		int rowCount = 0;
+
+		while (testQuery.next()) {
+			rowCount++;
+			int CT = testQuery.value("flow_number").toInt();
+			double AD2 = testQuery.value("AD2").toDouble();
+			double YZ_mm = testQuery.value("YZ_mm").toDouble();
+			double AD1 = testQuery.value("AD1").toDouble();
+
+			batchData += QString("%1,%2,%3,%4\n")
+				.arg(CT)
+				.arg(AD2)
+				.arg(YZ_mm)
+				.arg(AD1);
+		}
+
+		// 一次性写入批量数据
+		out << batchData;
+
+		// 检查是否还有更多数据
+		if (rowCount < BATCH_SIZE) {
+			hasMoreData = false;
+		}
+
+		offset += BATCH_SIZE;
+
+		// 提供进度信息
+		qDebug() << "Processed" << offset << "records...";
+	}
+
+	// 提交事务
+
+	// 恢复SQLite默认设置
+	pragmaQuery.exec("PRAGMA synchronous = NORMAL");
+	pragmaQuery.exec("PRAGMA journal_mode = DELETE");
+	pragmaQuery.exec("PRAGMA cache_size = 2000");
+	pragmaQuery.exec("PRAGMA temp_store = DEFAULT");
 
 	file.close();
+
 	QJsonObject jsonObj;
 	jsonObj["__channel"] = channel_ + "-export-data";
 	jsonObj["status"] = "success";
@@ -179,8 +230,7 @@ bool ReportHandler::exportData(const QSqlDatabase& configDb, const QSqlDatabase&
 	QJsonDocument jsonDoc1(jsonObj);
 	response = jsonDoc1.toJson();
 
-
-    return true;
+	return true;
 }
 
 

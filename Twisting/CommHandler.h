@@ -50,7 +50,11 @@ protected:
 
 	void packPC_KEY(int pc_key, QByteArray& buffer);
 
-	void packPC_KEY(int pc_key,int pc_addr, QByteArray& buffer);
+	void packPC_KEY(int pc_key, int pc_addr, QByteArray& buffer);
+
+
+	void packPC_KEY(int pc_key, int pc_addr, int16_t data, QByteArray& buffer);
+	void packPC_KEY(int pc_key, int pc_addr, int32_t data, QByteArray& buffer);
 	/**
 	 * 判断大小端，小端返回true.
 	 * 

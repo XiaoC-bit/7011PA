@@ -36,6 +36,18 @@ bool ControlTestCommHandler::commFunc(CommunicationThread* socket, QJsonObject& 
 	else if (type == "zero") {
 		return zero(socket, obj, err);
 	}
+    else if (type == "setYZDIR") {
+        return setYZDIR(socket, obj, err);
+    }
+    else if (type == "setXDIR") {
+        return setXDIR(socket, obj, err);
+    }
+    else if (type == "setXGAIN") {
+        return setXGAIN(socket, obj, err);
+    }
+    else if (type == "setYZGAIN") {
+        return setYZGAIN(socket, obj, err);
+    }
 	return false;
 }
 
@@ -479,12 +491,118 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 
 
         if (direction == "Forward") {
-            if (!writeFloat(socket, 0x0a10, 0, err))
+            int16_t value=0;
+            if (!readInt16(socket, 0x0a10, value, err)) {
                 return false;
+            }
+            //将BIT 0 设置为0
+            value &= ~(1 << 0);
+            //将BIT 9 设置为1
+			value |= (1 << 9);
+            //将BIT 10设置为0
+			value &= ~(1 << 10);
+
+            if (!writeInt16(socket, 0x0a10, value, err))
+                return false;
+            if (!readInt16(socket, 0x0a10, value, err)) {
+                return false;
+            }
+            //回读检查一遍
+			//检查BIT 0是否为0
+			if ((value & (1 << 0)) != 0) {
+				err = "BIT 0 is not set";
+				return false;
+			}
+			//检查BIT 9是否为1
+			if ((value & (1 << 9)) == 0) {
+				err = "BIT 9 is not set";
+				return false;
+			}
+			//检查BIT 10是否为0
+			if ((value & (1 << 10)) != 0) {
+				err = "BIT 10 is not set";
+				return false;
+			}
+
+
+            //写0A16
+            value = 0;
+            if (!readInt16(socket, 0x0a16, value, err)) {
+                return false;
+            }
+            //将BIT 1 设置为1
+            value |= (1<<1);
+
+            if (!writeInt16(socket, 0x0a16, value, err))
+                return false;
+
+            //检查回读一遍
+            if (!readInt16(socket, 0x0a16, value, err)) {
+                return false;
+            }
+			//检查BIT 1是否为1
+            if ((value & (1 << 1)) == 0) {
+                err = "BIT 1 is not set";
+                return false;
+            }
         }
         else if (direction == "Backward") {
-            if (!writeFloat(socket, 0x0a10, 1, err))
+            int16_t value = 0;
+            if (!readInt16(socket, 0x0a10, value, err)) {
                 return false;
+            }
+
+            //将BIT 0 设置为1
+			value |= (1 << 0);
+            //将BIT 9 设置为1
+            value |= (1 << 9);
+            //将BIT 10设置为1
+			value |= (1 << 10);
+
+            if (!writeInt16(socket, 0x0a10, value, err))
+                return false;
+
+            //回读确认一遍
+            if (!readInt16(socket, 0x0a10, value, err)) {
+                return false;
+            }
+            //检查BIT 0是否为1
+			if ((value & (1 << 0)) == 0) {
+				err = "BIT 0 is not set";
+				return false;
+			}
+            //检查BIT 9是否为1
+            if ((value & (1 << 9)) == 0) {
+                err = "BIT 9 is not set";
+                return false;
+            }
+			//检查BIT 10是否为1
+			if ((value & (1 << 10)) == 0) {
+				err = "BIT 10 is not set";
+				return false;
+			}
+
+
+            //写0A16
+            value = 0;
+            if (!readInt16(socket, 0x0a16, value, err)) {
+                return false;
+            }
+            //将BIT 1 设置为0
+            value &= ~(1 << 1);
+
+            if (!writeInt16(socket, 0x0a16, value, err))
+                return false;
+
+            //检查回读一遍
+            if (!readInt16(socket, 0x0a16, value, err)) {
+                return false;
+            }
+			//检查BIT 1是否为0
+            if ((value & (1 << 1)) != 0) {
+                err = "BIT 1 is not set";
+                return false;
+            }
         }
 
     }
@@ -539,7 +657,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         }
 
         //写入移动速度
-        if (!writeFloat(socket, 0x1408, torsionSpeed, err))
+        if (!writeFloat(socket, 0x1C08, torsionSpeed, err))
             return false;
 
         //第一个步骤
@@ -850,6 +968,68 @@ bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject&
 	return true;
 }
 
+
+
+//写入X DIR
+bool ControlTestCommHandler::setXDIR(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+
+    bool onOrOff = obj["on"].toBool();
+
+
+    int16_t value = 0;
+    if (!readInt16(socket, 0x0a10, value, err)) {
+        return false;
+    }
+    //将BIT 9 设置为1
+    int bitNumber = 9;
+    if (onOrOff) {
+        value |= (1 << bitNumber);
+    }
+    else {
+        value &= ~(1 << bitNumber);
+    }
+
+    if (!writeInt16(socket, 0x0a10, value, err))
+        return false;
+
+    return true;
+}
+
+//写入YZ DIR
+bool ControlTestCommHandler::setYZDIR(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+	bool onOrOff = obj["on"].toBool();
+	int16_t value = 0;
+	if (!readInt16(socket, 0x0a10, value, err)) {
+		return false;
+	}
+	//将BIT 10 设置为1
+	int bitNumber = 10;
+	if (onOrOff) {
+		value |= (1 << bitNumber);
+	}
+	else {
+		value &= ~(1 << bitNumber);
+	}
+	if (!writeInt16(socket, 0x0a10, value, err))
+		return false;
+	return true;
+}
+
+
+//写入 XGAIN
+bool ControlTestCommHandler::setXGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+    float gain = obj["GAIN"].toDouble();
+    if (!writeFloat(socket, 0x0a70, gain, err))
+        return false;
+    return true;
+}
+//写入YZ GAIN
+bool ControlTestCommHandler::setYZGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+    float gain = obj["GAIN"].toDouble();
+    if (!writeFloat(socket, 0x0a74, gain, err))
+        return false;
+    return true;
+}
 
 bool ControlTestCommHandler::zero(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 

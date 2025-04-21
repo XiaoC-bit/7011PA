@@ -732,15 +732,6 @@ bool DataProcessor::beginInternalTest() {
 * @param data
 */
 void DataProcessor::handleRegularInfo(const QVariant& data) {
-
-	if(0)
-	{
-		queueId_ = 3;
-
-		sumupQueue();
-	}
-
-	//QThread::msleep(600);
 	// 
 	//转换数据类型
 	U65RawData info = data.value<U65RawData>();
@@ -792,9 +783,9 @@ void DataProcessor::handleRegularInfo(const QVariant& data) {
 
 
 	//float AD1[12];//轴向位移
-	//float X[12];//扭矩输出
-	//float YZ_MM[12];//编码器反馈的扭矩
-	//float AD2[12];//角度
+	//float X[12];//编码器反馈的扭矩
+	//float YZ_MM[12];//角度
+	//float AD2[12];//扭矩输出
 
 
 

@@ -68,10 +68,8 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 	U65Info_.U65_MODE = (recvData[12 + 0x18] & 0xff) + (recvData[12 + 0x19] & 0xff) * 0x100;
 	U65Info_.U65_MSG = (recvData[12 + 0x1a] & 0xff) + (recvData[12 + 0x1b] & 0xff) * 0x100;
 	U65Info_.U65_MSG2 = (recvData[12 + 0x1c] & 0xff) + (recvData[12 + 0x1d] & 0xff) * 0x100;
-	U65Info_.U65_MSG3 = (recvData[12 + 0x20] & 0xff) + 
-						(recvData[12 + 0x21] & 0xff) * 0x100 + 
-						(recvData[12 + 0x22] & 0xff) * 0x10000 + 
-						(recvData[12 + 0x23] & 0xff) * 0x1000000;
+	U65Info_.U65_MSG3 = (recvData[12 + 0x20] & 0xff) +
+		(recvData[12 + 0x21] & 0xff) * 0x100;
 
 
 	obj["U65_MODE"] = U65Info_.U65_MODE;
@@ -97,6 +95,7 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 	float* pHex32 = (float*)&Hex32;
 	U65Info_.SITA = *pHex32;//S*  的θ 角	
 	obj["SITA"] = U65Info_.SITA;
+	obj["angle"] = *pHex32;//扭转机  角度
 
 
 	obj["twistCount"] = (recvData[12 + 0xD0] & 0xff) +
@@ -116,7 +115,7 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 		(recvData[12 + 0x36] & 0xff) * 0x10000 +
 		(recvData[12 + 0x37] & 0xff) * 0x1000000;
 	pHex32 = (float*)&Hex32;
-	obj["angle"] = *pHex32;//扭转机  角度
+	obj["X_mm"] = *pHex32;
 
 
 	Hex32 = (recvData[12 + 0x30] & 0xff) +
@@ -300,6 +299,8 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 			 return false;
 		 }
 
+
+
 		U65Info_.Sys_Flag1 = (recvData[0x10 + 12] & 0xff) + (recvData[0x10 + 13] & 0xff) * 0x100;
 		if (U65Info_.Sys_Flag1 == 0) {
 			qDebug() << "Sys_Flag1 is zero";
@@ -317,10 +318,18 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 
 		obj["friction"] = U65Info_.stru_ReadU65ext.md_SITA_COMP / 83.0;
 
-		
+
 		Hex32 = (recvData[12 + 0x70] & 0x00ff) + (recvData[12 + 0x71] & 0x00ff) * 0x0100 + (recvData[12 + 0x72] & 0x00ff) * 0x010000 + (recvData[12 + 0x73] & 0x00ff) * 0x01000000;
 		U65Info_.stru_ReadU65ext.md_X_RATE = *pHex32; //
 		obj["X_RATE"] = U65Info_.stru_ReadU65ext.md_X_RATE;
+
+
+		Hex32 = 
+			(recvData[12 + 0x74] & 0x00ff) + 
+			(recvData[12 + 0x75] & 0x00ff) * 0x0100 + 
+			(recvData[12 + 0x76] & 0x00ff) * 0x010000 + 
+			(recvData[12 + 0x77] & 0x00ff) * 0x01000000;
+		obj["YZ_RATE"] = *pHex32; //
 
 
 		Hex32 = (recvData[12 + 0x28] & 0x00ff) + (recvData[12 + 0x29] & 0x00ff) * 0x0100 + (recvData[12 + 0x2A] & 0x00ff) * 0x010000 + (recvData[12 + 0x2B] & 0x00ff) * 0x01000000;

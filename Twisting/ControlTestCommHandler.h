@@ -31,6 +31,16 @@ private:
 	//归零
 	bool zero(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
+	//写入X DIR
+	bool setXDIR(CommunicationThread* socket, QJsonObject& obj, QString& err);
+
+	//写入YZ DIR
+	bool setYZDIR(CommunicationThread* socket, QJsonObject& obj, QString& err);
+
+	//写入 XGAIN
+	bool setXGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err);
+	//写入YZ GAIN
+	bool setYZGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
 private:
 
