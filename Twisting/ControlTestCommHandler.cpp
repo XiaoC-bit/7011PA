@@ -48,9 +48,38 @@ bool ControlTestCommHandler::commFunc(CommunicationThread* socket, QJsonObject& 
     else if (type == "setYZGAIN") {
         return setYZGAIN(socket, obj, err);
     }
+    else if (type == "set-sampling-rate") {
+		return setSamplingRate(socket, obj, err);
+    }
+	else if (type == "setADGAIN") {
+		return setADGAIN(socket, obj, err);
+	}
 	return false;
 }
 
+
+bool ControlTestCommHandler::setSamplingRate(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+	int samplingRate = obj["samplingRate"].toInt();
+
+    QByteArray buffer;
+    buffer.fill(0x00, 528);
+    packPC_KEY(0x9A, samplingRate, buffer);
+    if (!socket->writeData(buffer)) {
+        err = "writeData error " + socket->socketError();
+        return false;
+    }
+    QByteArray recvData;
+    if (!socket->readData(recvData)) {
+        err = "readData error " + socket->socketError();
+        return false;
+    }
+    if (!checkSum(recvData)) {
+        err = "readData error ,checksum error";
+        return false;
+    }
+    return true;
+
+}
 
 
 bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObject& recvObj, QString& err) {
@@ -329,13 +358,31 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     //写入通用参数    
 
     //归零模式
-	QByteArray buffer;
+	/*QByteArray buffer;
 	buffer.fill(0x00, 528);
 	setCmd(E_Mode::Write, buffer);
 	setLength(0x02, buffer);
 	setAddr(0x0ad4, buffer);
 
-	int16_t mi_Add = 0;
+	
+    buffer[12] = int8_t((mi_Add & 0x000000FF));
+    buffer[13] = int8_t((mi_Add & 0x0000FF00) >> 8);
+    calcSum(buffer);
+
+    if (!socket->writeData(buffer)) {
+        err = "writeData error " + socket->socketError();
+        return false;
+    }
+    QByteArray recvData;
+    if (!socket->readData(recvData)) {
+        err = "readData error " + socket->socketError();
+        return false;
+    }
+    if (!checkSum(recvData)) {
+        err = "readData error ,checksum error";
+        return false;
+    }*/
+    int16_t mi_Add = 0;
     //遍历zeroModeList
     for (int i = 0; i < zeroModeList.length(); i++)
     {
@@ -356,23 +403,12 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         }
     }
 
-    buffer[12] = int8_t((mi_Add & 0x000000FF));
-    buffer[13] = int8_t((mi_Add & 0x0000FF00) >> 8);
-    calcSum(buffer);
 
-    if (!socket->writeData(buffer)) {
-        err = "writeData error " + socket->socketError();
-        return false;
-    }
-    QByteArray recvData;
-    if (!socket->readData(recvData)) {
-        err = "readData error " + socket->socketError();
-        return false;
-    }
-    if (!checkSum(recvData)) {
-        err = "readData error ,checksum error";
-        return false;
-    }
+	if (!writeInt16(socket, 0x0ad4, mi_Add, err))
+	{
+		err = "writeInt16 error " + socket->socketError();
+		return false;
+	}
    
 	//写入初始负载值
 	if (!writeFloat(socket, 0x0a2c, initialLoadValue, err))
@@ -418,6 +454,28 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         err = "unit error";
         return false;
     }
+
+
+    for (int i = 0; i < zeroModeList.length(); i++)
+    {
+        if (zeroModeList[i] == "torqueZero")
+        {
+            //第0个bit写入1
+            mi_PC_TEST_2 |= 0x01;
+        }
+        else if (zeroModeList[i] == "angleZero")
+        {
+            //第1个bit写入1
+            mi_PC_TEST_2 |= 0x02;
+        }
+        else if (zeroModeList[i] == "angleZeroAndTorqueZero") {
+            //第1 2个bit写入1
+
+            mi_PC_TEST_2 |= 0x03;
+        }
+    }
+
+
     if (!writeInt16(socket, 0x0A7A, mi_PC_TEST_2, err))
         return false;
 
@@ -430,11 +488,11 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 		return false;
     }
 	//写入采样频率
-	int32_t mi_SampleRate = 1;//5K的采样率
-    if (!writeInt32(socket, 0x080c, mi_SampleRate, err)) {
-        err = "writeInt32 error " + socket->socketError();
-        return false;
-    }
+	//int32_t mi_SampleRate = 1;//5K的采样率
+ //   if (!writeInt32(socket, 0x080c, mi_SampleRate, err)) {
+ //       err = "writeInt32 error " + socket->socketError();
+ //       return false;
+ //   }
 
 
 
@@ -616,6 +674,38 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         if (!writeFloat(socket, 0x0A5C, (float)maxAngle, err))
             return false;
 
+
+        //写入移动速度
+        if (!writeFloat(socket, 0x1C08, torsionSpeed, err))
+            return false;
+        {
+            DF_SET df_set;
+            if (staticMode == "torque")
+            {
+                df_set.IR_TYPE = 2;
+            }
+            else if (staticMode == "angle")
+            {
+                df_set.IR_TYPE = 1;
+            }
+            df_set.DF_SIGNAL = 4;
+            if (torsionUnit == "degree_per_min")
+            {
+                df_set.DF_SP_UNIT = 2;
+            }
+            else if (torsionUnit == "n_per_min")
+            {
+                df_set.DF_SP_UNIT = 1;
+            }
+
+            df_set.DF_IR = 0;
+            df_set.DF_HZ = 10;
+
+
+            //如果是第一个步骤，先位移0mm
+            dfSets.push_back(df_set);
+        }
+
         DF_SET df_set;
 
 		if (staticMode == "torque")
@@ -656,10 +746,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             df_set.DF_IR = constantAngle;
         }
 
-        //写入移动速度
-        if (!writeFloat(socket, 0x1C08, torsionSpeed, err))
-            return false;
-
+        df_set.DF_HZ = torsionSpeed;
         //第一个步骤
 		dfSets.push_back(df_set);
 
@@ -679,11 +766,11 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 
         if (staticMode == "torque")
         {
-            df_set.DF_IR = -constantTorque;
+            df_set_second.DF_IR = -constantTorque;
         }
         else if (staticMode == "angle")
         {
-            df_set.DF_IR = -constantAngle;
+            df_set_second.DF_IR = -constantAngle;
         }  
         dfSets.push_back(df_set_second);
 
@@ -698,7 +785,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         DF_SET df_set_loop;
         df_set_loop.IR_TYPE = 4;
         df_set_loop.DF_END_CYCLE = cycleCount;
-        df_set_loop.JUMP_NO = 0;
+        df_set_loop.JUMP_NO = 1;
         dfSets.push_back(df_set_loop);
     }
     else if (mode == "dynamic")
@@ -797,8 +884,9 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     文档解释:將 PC_ADD 指定的 動態組別 整組 搬到 及時顯示區  	DF_SET[PC_ADD]  0X09B0
     旧版代码中有此命令,搬运此段逻辑
     */
-
-	buffer.clear();
+    QByteArray buffer;
+    QByteArray recvData;
+	buffer.fill(0x00, 528);
     packPC_KEY(0x3a, 0, buffer);//这里，就是一直下发不了温度的原因
     if (!socket->writeData(buffer)) {
         err = "writeData error " + socket->socketError();
@@ -1028,6 +1116,30 @@ bool ControlTestCommHandler::setYZGAIN(CommunicationThread* socket, QJsonObject&
     float gain = obj["GAIN"].toDouble();
     if (!writeFloat(socket, 0x0a74, gain, err))
         return false;
+    return true;
+}
+
+
+bool ControlTestCommHandler::setADGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+    int ad_number = obj["AD"].toInt();
+	float gain = obj["GAIN"].toDouble();
+	QByteArray buffer;
+	buffer.fill(0x00, 528);
+	packPC_KEY(0x0f, ad_number - 1, gain, buffer);
+
+    if (!socket->writeData(buffer)) {
+        err = "writeData error " + socket->socketError();
+        return false;
+    }
+    QByteArray recvData;
+    if (!socket->readData(recvData)) {
+        err = "readData error " + socket->socketError();
+        return false;
+    }
+    if (!checkSum(recvData)) {
+        err = "readData error ,checksum error";
+        return false;
+    }
     return true;
 }
 

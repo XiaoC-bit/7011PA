@@ -155,6 +155,7 @@ struct ReadU65Struct
 
 
 	int REAL_MSG_CT;//流水号
+	int SAMPLE_RATE;//流水号
 	float AD1[12];//轴向位移
 	float X[12];//扭矩输出
 	float YZ_MM[12];//编码器反馈的扭矩

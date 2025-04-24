@@ -377,7 +377,12 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 		return false;
 	}
 
-	//qDebug() << "REAL_MSG_CT:" << U65Info_.REAL_MSG_CT;
+	//当前采样率
+	if (!readInt32(socket, 0x080c, U65Info_.SAMPLE_RATE, err)) {
+		err = "readInt32 error " + socket->socketError();
+		return false;
+	}
+	obj["SAMPLE_RATE"] = U65Info_.SAMPLE_RATE;
 
 	{
 		QByteArray buffer;

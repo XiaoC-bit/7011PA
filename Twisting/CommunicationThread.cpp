@@ -521,10 +521,13 @@ void CommunicationThread::timerFunc()
 		looseFireRealData(obj);
 
 #ifdef _DEBUG
-		m_socket->connectToHost(m_deviceAddress, m_port);
-		if (!m_socket->waitForConnected()) {
-			//log(m_deviceAddress, m_socket->errorString());
+		if (0) {
+			m_socket->connectToHost(m_deviceAddress, m_port);
+			if (!m_socket->waitForConnected()) {
+				//log(m_deviceAddress, m_socket->errorString());
+			}
 		}
+		
 #else
 		m_socket->connectToHost(m_deviceAddress, m_port);
 		if (!m_socket->waitForConnected()) {

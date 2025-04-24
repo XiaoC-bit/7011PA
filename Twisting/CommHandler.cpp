@@ -60,6 +60,43 @@ void CommHandler::packPC_KEY(int pc_key, int pc_addr, int16_t data, QByteArray& 
 	calcSum(buffer);
 }
 
+
+void CommHandler::packPC_KEY(int pc_key, int pc_addr, float data, QByteArray& buffer) {
+	buffer.resize(528);
+	buffer.fill(0x00, 528);
+	setCmd(E_Mode::Write, buffer);
+	setLength(10, buffer);
+	setAddr(0x0902, buffer);
+	buffer[12] = int8_t((pc_key & 0x000000FF));
+	buffer[13] = int8_t((pc_key & 0x0000FF00) >> 8);
+
+	buffer[14] = int8_t((pc_addr & 0x000000FF));
+	buffer[15] = int8_t((pc_addr & 0x0000FF00) >> 8);
+
+
+	buffer[16] = 0x04;
+	buffer[17] = 0x00;
+
+	if (isLitteEndian()) {
+		char* ptr = reinterpret_cast<char*>(&data);
+		buffer[18] = ptr[0];
+		buffer[19] = ptr[1];
+		buffer[20] = ptr[2];
+		buffer[21] = ptr[3];
+	}
+	else {
+		char* ptr = reinterpret_cast<char*>(&data);
+		buffer[18] = ptr[3];
+		buffer[19] = ptr[2];
+		buffer[20] = ptr[1];
+		buffer[21] = ptr[0];
+	}
+
+
+
+	calcSum(buffer);
+}
+
 void CommHandler::packPC_KEY(int pc_key, int pc_addr, int32_t data, QByteArray& buffer) {
 	buffer.resize(528);
 	buffer.fill(0x00, 528);
