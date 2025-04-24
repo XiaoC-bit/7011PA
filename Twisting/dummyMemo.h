@@ -11,6 +11,10 @@
 	启动时，queue的current、show字段全部置为0，
 2.
 
+
+20250424
+1.detail将flow_number转为时间
+
 */
 
 

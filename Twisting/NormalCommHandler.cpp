@@ -20,6 +20,9 @@ bool NormalCommHandler::commFunc(CommunicationThread* socket, QJsonObject& obj, 
 	return false;
 }
 
+
+extern int SAMPLE_RATE;
+
 bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 	//
 	/**
@@ -383,7 +386,7 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 		return false;
 	}
 	obj["SAMPLE_RATE"] = U65Info_.SAMPLE_RATE;
-
+	SAMPLE_RATE = U65Info_.SAMPLE_RATE;
 	{
 		QByteArray buffer;
 		buffer.fill(0x00, 528);

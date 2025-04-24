@@ -554,6 +554,8 @@ void DataProcessor::recordDetail(const U65RawData& info) {
 	}
 }
 
+extern int SAMPLE_RATE;
+
 void  DataProcessor::handleRegularInfoFunc(const U65RawData& info) {
 
 
@@ -590,12 +592,26 @@ void  DataProcessor::handleRegularInfoFunc(const U65RawData& info) {
 				twistingData.axialDisplacement = AD1;
 				vecTwistingData_.push_back(twistingData);
 
+				float time = 0;
+				int flow_number = last_REAL_MSG_CT_ + i;
+				float sample_freq = 1.0f; // Hz
+				switch (SAMPLE_RATE) {
+				case 0: sample_freq = 10000.0f; break;
+				case 1: sample_freq = 5000.0f; break;
+				case 3: sample_freq = 2500.0f; break;
+				case 4: sample_freq = 2000.0f; break;
+				case 9: sample_freq = 1000.0f; break;
+				case 19: sample_freq = 500.0f; break;
+				default: sample_freq = 1.0f; break; // fallback
+				}
+				time = flow_number / sample_freq;
+
 				strSql = QString("insert into detail(queue_id,AD1,AD2,YZ_mm,flow_number) values(%1,%2,%3,%4,%5)")
 					.arg(queueId_)
 					.arg(AD1)
 					.arg(AD2)
 					.arg(YZ_MM)
-					.arg(last_REAL_MSG_CT_ + i);
+					.arg(time);
 				if (!query.exec(strSql)) {
 					qDebug() << "deviceId :  " << deviceId_ << "\t" << query.lastError().text();
 
@@ -635,35 +651,35 @@ void  DataProcessor::handleRegularInfoFunc(const U65RawData& info) {
 
 
 
-	if (lastTesting_) {
-		//数据异常,不记录任何数据
-		if (!flag_) 
-			return;
+	//if (lastTesting_) {
+	//	//数据异常,不记录任何数据
+	//	if (!flag_) 
+	//		return;
 
 
 
 
-		return;
+	//	return;
 
-		//结算当前测试记录
-		if (!curTesting_) 			
-			return endTestQueue(info);
-		//测试中
-		return handleTesting(info);
-	}
-	else if (curTesting_) {
-		details_.clear();
+	//	//结算当前测试记录
+	//	if (!curTesting_) 			
+	//		return endTestQueue(info);
+	//	//测试中
+	//	return handleTesting(info);
+	//}
+	//else if (curTesting_) {
+	//	details_.clear();
 
 
-		step1StartTime_ = 0;
-		step2StartTime_ = 0;
-		lastStep_ = 0;
+	//	step1StartTime_ = 0;
+	//	step2StartTime_ = 0;
+	//	lastStep_ = 0;
 
-		//门尼有时候不会检测到开模，导致开始时间不为0
-		startTime_ = 0;
+	//	//门尼有时候不会检测到开模，导致开始时间不为0
+	//	startTime_ = 0;
 
-		return beginTestQueue(info);
-	}
+	//	return beginTestQueue(info);
+	//}
 
 }
 

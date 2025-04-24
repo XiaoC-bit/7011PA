@@ -515,19 +515,8 @@ bool ReportHandler::fetchTestHistoryDetail(const QSqlDatabase& db, const QSqlDat
 		point.id = testQuery.value("flow_number").toInt();
 		points.push_back(point);
 		continue;
-		QJsonObject object;
-		double AD2 = testQuery.value("AD2").toDouble();
-		double YZ_mm = testQuery.value("YZ_mm").toDouble();
-		double AD1 = testQuery.value("AD1").toDouble();
 
-		int id = testQuery.value("flow_number").toInt();
-
-		object["id"] = id;
-		object["AD1"] = AD1;
-		object["AD2"] = AD2;
-		object["YZ_mm"] = YZ_mm;
-
-		array.append(object);
+		
 	}
 
 	if (0) {
