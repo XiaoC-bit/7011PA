@@ -1,4 +1,5 @@
 #include "Twisting.h"
+#include "httplib.h"
 #include <QtWidgets/QApplication>
 
 #include <QMutex>
@@ -10,7 +11,9 @@
 #include <QtSql>
 #include <qsettings.h>
 #include <tlhelp32.h>
-#include <tlhelp32.h>
+
+#include <qnetworkaccessmanager.h>
+#include <qnetworkreply.h>
 
 #include "dumpfile.h"
 #include "DataDefine.h"
@@ -109,14 +112,59 @@ void logMessage(QtMsgType type, const QMessageLogContext& context, const QString
 	mutex.unlock();
 }
 
+
+bool waitForHttpServerReady(const QString& urlStr, int timeoutMs = 5000, int intervalMs = 100)
+{
+	QElapsedTimer timer;
+	timer.start();
+
+	while (timer.elapsed() < timeoutMs) {
+		QUrl url(urlStr);  //  创建 QUrl 实例
+		QNetworkRequest request(url);  //  用 QUrl 构造 QNetworkRequest
+
+		QNetworkAccessManager manager;
+		QNetworkReply* reply = manager.get(request);  // 正确调用 get()
+
+		QEventLoop loop;
+		QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+		loop.exec();
+
+		if (reply->error() == QNetworkReply::NoError) {
+			reply->deleteLater();
+			return true;
+		}
+
+		reply->deleteLater();
+		QThread::msleep(intervalMs);
+	}
+
+	return false;
+}
+
+
 #ifdef _DEBUG
-bool gDebug = true;
+bool gDebug = false;
 #else
 bool gDebug = false;
 #endif
 
 Config gConfig;
 QString gSqlType = "SqlLite";
+
+
+std::unique_ptr<httplib::Server> server(new httplib::Server);
+
+void startHttpServer(const QString& mountDir, int port) {
+	server->set_mount_point("/", mountDir.toStdString());
+
+	std::thread([port]() {
+		if (!server->listen("0.0.0.0", port)) {
+			qDebug() << "监听失败，端口可能被占用";
+		}
+		}).detach();
+}
+
+
 
 int main(int argc, char *argv[])
 {
@@ -196,12 +244,22 @@ int main(int argc, char *argv[])
 	QStringList args;
 
 
+	using namespace httplib;
+	Server svr;
 
+
+	/*bool ret = svr.set_mount_point("/", currentDir.toStdString()+"/FrontEnv");
+
+	ret = svr.listen("0.0.0.0", gConfig.frontPort);*/
+
+	// 启动 HTTP 服务
+	QString currentDir = QCoreApplication::applicationDirPath();
+	startHttpServer(currentDir + "/FrontEnv", gConfig.frontPort);
 
 	QString pyHttpExe = dir.filePath(QString("FrontEnv/%1").arg(gConfig.frontExeName));
 	program.setWorkingDirectory(dir.filePath("FrontEnv/"));
 	//args.append("-h");
-	if (!gDebug) {
+	/*if (!gDebug) {
 		while (1) {
 			if (!terminateProcessByName(gConfig.frontExeName.toStdString()))
 				break;
@@ -219,6 +277,20 @@ int main(int argc, char *argv[])
 				QProcess::execute(cmd);
 			}
 			});
+	}*/
+	if (!gDebug) {
+
+
+		QString url = QString("http://localhost:%1").arg(gConfig.frontPort);
+
+		if (!waitForHttpServerReady(url, 5000)) {
+			qDebug() << "服务启动超时，未监听到端口：" << url;
+			program.kill();
+			exit(1);
+		}
+
+		//等待 以下URL可以访问
+		//QString uri = QString("http://localhost:%1").arg(gConfig.frontPort);
 	}
 
 

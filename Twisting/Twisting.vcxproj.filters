@@ -57,6 +57,9 @@
     <Filter Include="Math">
       <UniqueIdentifier>{bcb7bd4d-e305-4f81-9679-6121a43a3773}</UniqueIdentifier>
     </Filter>
+    <Filter Include="http">
+      <UniqueIdentifier>{ef811f3a-895e-460a-9973-9c9353bc5e76}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="Twisting.qrc">
@@ -152,6 +155,9 @@
     </ClInclude>
     <ClInclude Include="lttb.hpp">
       <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="httplib.h">
+      <Filter>http</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

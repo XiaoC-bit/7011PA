@@ -151,6 +151,7 @@
     <QtMoc Include="TestingHandler.h" />
     <QtMoc Include="ReportHandler.h" />
     <QtMoc Include="PIDCommHandler.h" />
+    <ClInclude Include="httplib.h" />
     <ClInclude Include="lttb.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="ToolDefine.h" />
