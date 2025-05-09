@@ -143,13 +143,14 @@ bool waitForHttpServerReady(const QString& urlStr, int timeoutMs = 5000, int int
 
 
 #ifdef _DEBUG
-bool gDebug = false;
+bool gDebug = true;
 #else
 bool gDebug = false;
 #endif
 
 Config gConfig;
 QString gSqlType = "SqlLite";
+
 
 
 std::unique_ptr<httplib::Server> server(new httplib::Server);
@@ -254,12 +255,12 @@ int main(int argc, char *argv[])
 
 	// Æô¶¯ HTTP ·þÎñ
 	QString currentDir = QCoreApplication::applicationDirPath();
-	startHttpServer(currentDir + "/FrontEnv", gConfig.frontPort);
+	//startHttpServer(currentDir + "/FrontEnv", gConfig.frontPort);
 
 	QString pyHttpExe = dir.filePath(QString("FrontEnv/%1").arg(gConfig.frontExeName));
 	program.setWorkingDirectory(dir.filePath("FrontEnv/"));
 	//args.append("-h");
-	/*if (!gDebug) {
+	if (!gDebug) {
 		while (1) {
 			if (!terminateProcessByName(gConfig.frontExeName.toStdString()))
 				break;
@@ -277,7 +278,7 @@ int main(int argc, char *argv[])
 				QProcess::execute(cmd);
 			}
 			});
-	}*/
+	}
 	if (!gDebug) {
 
 

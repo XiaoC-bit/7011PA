@@ -7,7 +7,9 @@
 #include <qjsonarray.h>
 #include <qsqldatabase.h>
 #include <qjsondocument.h>
-
+#include <qdatastream.h>
+#include <qtimer.h>
+#include <QElapsedTimer>
 #include <qmessagebox.h>
 #include <qfile.h>
 #include <qfiledialog.h>
@@ -31,20 +33,20 @@ std::vector<ExamplePoint> mergeAndSortPoints(const std::vector<ExamplePoint>& a,
 		std::vector<ExamplePoint> merged = a;
 		merged.insert(merged.end(), b.begin(), b.end());
 		std::sort(merged.begin(), merged.end(), [](const ExamplePoint& x, const ExamplePoint& y) {
-			return x.id < y.id;
+			return x.time < y.time;
 			});
 		return merged;
 	}
 	else {
-		std::unordered_map<int, ExamplePoint> map;
-		for (const auto& p : a) map[p.id] = p;
-		for (const auto& p : b) map[p.id] = p;
+		std::unordered_map<double, ExamplePoint> map;
+		for (const auto& p : a) map[p.time] = p;
+		for (const auto& p : b) map[p.time] = p;
 
 		std::vector<ExamplePoint> result;
 		for (const auto& kv : map) result.push_back(kv.second);
 
 		std::sort(result.begin(), result.end(), [](const ExamplePoint& x, const ExamplePoint& y) {
-			return x.id < y.id;
+			return x.time < y.time;
 			});
 		return result;
 	}
@@ -91,21 +93,26 @@ bool ReportHandler::exportHistoryData(const QSqlDatabase& configDb, const QSqlDa
 		qDebug() << testQuery.lastError().text();
 		return false;
 	}
-	while (testQuery.next()) {
-		QJsonObject object;
-		double AD2 = testQuery.value("AD2").toDouble();
-		double YZ_mm = testQuery.value("YZ_mm").toDouble();
-		double AD1 = testQuery.value("AD1").toDouble();
-		int CT = testQuery.value("flow_number").toInt();
+	if (testQuery.next()) {
+		int totalNumber = testQuery.value("totalNumber").toInt();
+		QByteArray data = testQuery.value("data").toByteArray();
+		QDataStream stream(&data, QIODevice::ReadWrite);
+		for (int i = 0; i < totalNumber; i++) {
+			float AD1, AD2, YZ_MM, time;
+			int c1, c2;
+			stream >> AD1 >> AD2 >> YZ_MM >> time >> c1 >> c2;
 
-		out << CT;
-		out << ",";
-		out << AD2;
-		out << ",";
-		out << YZ_mm;
-		out << ",";
-		out << AD1;
-		out << "\n";
+			out << time;
+			out << ",";
+			out << AD2;
+			out << ",";
+			out << YZ_MM;
+			out << ",";
+			out << AD1;
+			out << "\n";
+		}
+
+		
 
 	}
 
@@ -167,8 +174,41 @@ bool ReportHandler::exportData(const QSqlDatabase& configDb, const QSqlDatabase&
 	const int BATCH_SIZE = 50000; // 每批处理50000条记录
 	int offset = 0;
 	bool hasMoreData = true;
+	if (1) {
+		QSqlQuery testQuery(dataDb);
+		QString strSql = QString("SELECT detail.* from detail JOIN queue ON detail.queue_id = queue.id "
+			"WHERE queue.current=1 ");
+		if (!testQuery.exec(strSql)) {
+			qDebug() << "Failed to fetch data:" << testQuery.lastError().text();
+			file.close();
+			return false;
+		}
+		if (!testQuery.next()) {
+			qDebug() << "Failed to fetch data:" << testQuery.lastError().text();
+			file.close();
+			return false;
 
-	while (hasMoreData) {
+		}
+		int totalNumber = testQuery.value("totalNumber").toInt();
+		QByteArray data = testQuery.value("data").toByteArray();
+		QDataStream stream(&data, QIODevice::ReadWrite);
+
+		QString batchData;
+		for (int i = 0; i < totalNumber; i++) {
+			float AD1, AD2, YZ_MM, time;
+			int c1, c2;
+			stream >> AD1 >> AD2 >> YZ_MM >> time >> c1 >> c2;
+				
+			batchData = QString("%1,%2,%3,%4\n")
+			.arg(time)
+			.arg(AD2)
+			.arg(YZ_MM)
+			.arg(AD1);;
+			out << batchData;
+		}
+	}
+
+	while (false) {
 		QSqlQuery testQuery(dataDb);
 		QString strSql = QString("SELECT detail.flow_number, detail.AD2, detail.YZ_mm, detail.AD1 "
 			"FROM detail JOIN queue ON detail.queue_id = queue.id "
@@ -187,7 +227,7 @@ bool ReportHandler::exportData(const QSqlDatabase& configDb, const QSqlDatabase&
 
 		while (testQuery.next()) {
 			rowCount++;
-			int CT = testQuery.value("flow_number").toInt();
+			double CT = testQuery.value("flow_number").toDouble();
 			double AD2 = testQuery.value("AD2").toDouble();
 			double YZ_mm = testQuery.value("YZ_mm").toDouble();
 			double AD1 = testQuery.value("AD1").toDouble();
@@ -357,15 +397,19 @@ bool ReportHandler::liveTestingData(const QSqlDatabase& configDb, const QSqlData
 	}
 	queueId = testQuery.value("id").toInt();
 
-	strSql = QString("select count(*) as total from detail where queue_id=%1;").arg(queueId);
+	strSql = QString("select * from detail where queue_id=%1;").arg(queueId);
 	if (!testQuery.exec(strSql)) {
 		qDebug() << "Failed to fetch data:";
 		qDebug() << testQuery.lastError().text();
 		return false;
 	}
 	size_t total = 0;
+	QByteArray data;
+	QDataStream stream(&data, QIODevice::ReadWrite);
 	if (testQuery.next()) {
-		total = testQuery.value("total").toInt();
+		total = testQuery.value("totalNumber").toInt();
+		data = testQuery.value("data").toByteArray();
+		
 	}
 	int mod = 0;
 	if (total < 10000) {
@@ -384,36 +428,43 @@ bool ReportHandler::liveTestingData(const QSqlDatabase& configDb, const QSqlData
 		mod = 20;
 	}
 
-	strSql = QString("select detail.* from detail join queue on detail.queue_id = queue.id  where queue.current=1 and flow_number %%1=0").arg(mod);
-    if (!testQuery.exec(strSql)) {
-        qDebug() << "Failed to fetch data:";
-        qDebug() << testQuery.lastError().text();
-        return false;
-    }
-
-	const int DATA_COUNT = 500;//保留样本数量
+	const int DATA_COUNT = 5000;//保留样本数量
 
     QJsonArray array;
 
 	std::vector<ExamplePoint> points;
 
-    while (testQuery.next()) {
+	for (size_t i = 0; i < total; i++) {
+		ExamplePoint point;
+		float AD1, AD2, YZ_MM, time;
+		int c1, c2;
+		stream >> AD1 >> AD2 >> YZ_MM >> time >> c1 >> c2;
+		point.AD1 = AD1;
+		point.AD2 = AD2;
+		point.YZ_mm = YZ_MM;
+		point.time = time;
+
+
+		points.push_back(point);
+	}
+
+   /* while (testQuery.next()) {
 
 		ExamplePoint point;
 		point.AD1 = testQuery.value("AD1").toDouble();
 		point.AD2 = testQuery.value("AD2").toDouble();
 		point.YZ_mm = testQuery.value("YZ_mm").toDouble();
-		point.id = testQuery.value("flow_number").toInt();
+		point.time = testQuery.value("flow_number").toDouble();
 		points.push_back(point);
 		continue;
-    }
+    }*/
 	if (0) {
 
 		//不过滤
 		
 		for (auto& it : points) {
 			QJsonObject object;
-			object["id"] = it.id;
+			object["id"] = it.time;
 			object["AD1"] = it.AD1;
 			object["AD2"] = it.AD2;
 			object["YZ_mm"] = it.YZ_mm;
@@ -434,7 +485,7 @@ bool ReportHandler::liveTestingData(const QSqlDatabase& configDb, const QSqlData
 		auto merged = mergeAndSortPoints(outPoints1, outPoints2, true); // 去重合并
 		for (auto& it : merged) {
 			QJsonObject object;
-			object["id"] = it.id;
+			object["id"] = it.time;
 			object["AD1"] = it.AD1;
 			object["AD2"] = it.AD2;
 			object["YZ_mm"] = it.YZ_mm;
@@ -468,63 +519,51 @@ bool ReportHandler::fetchTestHistoryDetail(const QSqlDatabase& db, const QSqlDat
 	QSqlQuery testQuery(methodDb);
 	size_t total = 0;
 	int mod = 0;
-	QString strSql = QString("select count(*) as total from detail where queue_id = %1 ;").arg(recvObj["req_queue_id"].toInt());
+
+	const int DATA_COUNT = 5000;//保留样本数量
+	std::vector<ExamplePoint> points;
+	QString strSql = QString("select * from detail where queue_id = %1 ;").arg(recvObj["req_queue_id"].toInt());
 	if (!testQuery.exec(strSql)) {
 		qDebug() << "Failed to fetch data:";
 		qDebug() << testQuery.lastError().text();
 		return false;
 	}
 	if (testQuery.next()) {
-		total = testQuery.value("total").toInt();
-		if (total < 10000) {
-			mod = 1;
+		total = testQuery.value("totalNumber").toInt();
+		QByteArray data = testQuery.value("data").toByteArray();
+		QDataStream stream(&data, QIODevice::ReadWrite);
+		for (size_t i = 0; i < total; i++) {
+			ExamplePoint point;
+			float AD1, AD2, YZ_MM, time;
+			int c1, c2;
+			stream >> AD1 >> AD2 >> YZ_MM >> time >> c1 >> c2;
+			point.AD1 = AD1;
+			point.AD2 = AD2;
+			point.YZ_mm = YZ_MM;
+			point.time = time;
+			points.push_back(point);
 		}
-		else if (total < 10000) {
-			mod = 2;
-		}
-		else if (total < 100000) {
-			mod = 5;
-		}
-		else if (total < 1000000) {
-			mod = 10;
-		}
-		else {
-			mod = 20;
-		}
+	}
+	else {
+		QJsonObject jsonObj;
+		jsonObj["__channel"] = channel_ + "-fetch-test-history-detail";
+		jsonObj["status"] = "error";
+		jsonObj["message"] = "no data";
+		QJsonDocument jsonDoc(jsonObj);
+		response = jsonDoc.toJson();
+		return true;
 	}
 	
 
-	strSql = QString("select * from detail where queue_id = %1 and flow_number %%2=0;")
-		.arg(recvObj["req_queue_id"].toInt())
-		.arg(mod)
-		;
-
-	if (!testQuery.exec(strSql)) {
-		qDebug() << "Failed to fetch data:";
-		qDebug() << testQuery.lastError().text();
-		return false;
-	}
-	const int DATA_COUNT = 500;//保留样本数量
-	std::vector<ExamplePoint> points;
 	QJsonArray array;
-	while (testQuery.next()) {
-		ExamplePoint point;
-		point.AD1 = testQuery.value("AD1").toDouble();
-		point.AD2 = testQuery.value("AD2").toDouble();
-		point.YZ_mm = testQuery.value("YZ_mm").toDouble();
-		point.id = testQuery.value("flow_number").toInt();
-		points.push_back(point);
-		continue;
 
-		
-	}
 
 	if (0) {
 		//不过滤
 
 		for (auto& it : points) {
 			QJsonObject object;
-			object["id"] = it.id;
+			object["id"] = it.time;
 			object["AD1"] = it.AD1;
 			object["AD2"] = it.AD2;
 			object["YZ_mm"] = it.YZ_mm;
@@ -545,7 +584,7 @@ bool ReportHandler::fetchTestHistoryDetail(const QSqlDatabase& db, const QSqlDat
 		auto merged = mergeAndSortPoints(outPoints1, outPoints2, true); // 去重合并
 		for (auto& it : merged) {
 			QJsonObject object;
-			object["id"] = it.id;
+			object["id"] = it.time;
 			object["AD1"] = it.AD1;
 			object["AD2"] = it.AD2;
 			object["YZ_mm"] = it.YZ_mm;
@@ -760,7 +799,13 @@ bool ReportHandler::handleWsMsg(QJsonObject &recvObj, QString &response)
     auto type = recvObj["__type"];
     if (type == "live-testing-data")
     {
-        return liveTestingData(configDb, testDataDb, recvObj, response);
+		//计算耗时
+		QElapsedTimer timer;
+		timer.start();
+		qDebug() << "start time: " << timer.elapsed();
+		bool ret = liveTestingData(configDb, testDataDb, recvObj, response);
+		qDebug() << "end time: " << timer.elapsed();
+		return ret;
     }
 	else if (type == "fetch-test-history-detail") {
 		return fetchTestHistoryDetail(configDb, testDataDb, recvObj, response);

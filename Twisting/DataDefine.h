@@ -160,6 +160,9 @@ struct ReadU65Struct
 	float X[12];//扭矩输出
 	float YZ_MM[12];//编码器反馈的扭矩
 	float AD2[12];//角度
+
+	int twistingCount;//靜態或者破壞的循环次数
+	int twistingCountSin;///动态的循环次数
 };
 
 //扭转机专用的及时资料区
@@ -167,8 +170,11 @@ struct TwistingData {
 	double torque;//扭矩
 	double angle;//角度
 	double axialDisplacement;//轴向位移
-	double twistCount;
 	double testTimer;
+	double realTime;
+	int twistCount;
+	int twistCountSin;
+
 };
 
 struct U65RawData {
@@ -229,7 +235,7 @@ struct ExamplePoint {
 	double AD1;//变形
 	double AD2;//角度
 	double YZ_mm;//扭矩
-	int id;
+	double time;
 };
 
 using LttbAD2_YZmm = LargestTriangleThreeBuckets<ExamplePoint, double,

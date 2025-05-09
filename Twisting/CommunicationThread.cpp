@@ -134,13 +134,6 @@ void CommunicationThread::init(const QString& deviceAddress, quint16 port)
 
 
 void CommunicationThread::normalTimerFunc() {
-
-	/*if (1) {
-		U65RawData info;
-		emit fireRegularInfo(QVariant::fromValue(info));
-	}*/
-
-
 	QString strErr;
 	QJsonObject obj;
 	obj["__channel"] = "normal-message";
@@ -182,6 +175,7 @@ void CommunicationThread::normalTimerFunc() {
 		return fakeData(info);
 	}
 	else {
+		qDebug() << "fire " << info.U65Info.REAL_MSG_CT;
 		//读取缓冲区
 		emit fireRegularInfo(QVariant::fromValue(info));
 	}
@@ -278,118 +272,7 @@ bool CommunicationThread::readRecData(const U65RawData& info, U65RawData &fakeIn
 }
 
 void CommunicationThread::fakeData(const U65RawData& info) {
-	//待测模式
-	if (info.U65Info.U65_MODE == 2) {		
-		if (recNum1_ != 0) {
-			while (info.U65Info.REC_NO1 > recNum1_)
-			{
-				U65RawData fakeInfo;
-				if (!readRecData(info, fakeInfo))
-					return;
-				//通知数据处理线程
-				emit fireRegularInfo(QVariant::fromValue(fakeInfo));
-				recNum1_++;
-			}
 
-			//结束测试，直接转发
-			emit fireRegularInfo(QVariant::fromValue(info));
-
-		}
-		recNum1_ = 0;
-		recNum2_ = 0;
-	}
-	else if (info.U65Info.U65_MODE == 3) {
-
-		if (info.U65Info.U65_MSG == 7) {			
-			//等待送料，这里与旧软件逻辑不同。
-			if (recNum1_ != 0) {
-				while (info.U65Info.REC_NO1 > recNum1_)
-				{
-					U65RawData fakeInfo;
-					if (!readRecData(info, fakeInfo))
-						return;
-					//通知数据处理线程
-					emit fireRegularInfo(QVariant::fromValue(fakeInfo));
-					recNum1_++;
-				}
-			}			
-
-			emit fireRegularInfo(QVariant::fromValue(info));
-			recNum1_ = 0;
-			recNum2_ = 0;
-			return;
-		}
-
-		if (info.U65Info.U65_MSG < 10) 
-			return;
-		if (recNum1_ == 0) {
-			
-			//首次获取到测试数据，发送几个虚拟的消息
-
-			U65RawData fakeInfo;
-			fakeInfo.U65Info.U65_MODE = 3;
-			fakeInfo.U65Info.U65_MSG = 11;
-			fakeInfo.U65Info.AD_2 = 1;
-			//测试中
-			emit fireRegularInfo(QVariant::fromValue(fakeInfo));
-
-			//模具打开
-			fakeInfo.U65Info.AD_2 = 2;
-			fakeInfo.U65Info.IO1_IN |= (1 << 2);
-			emit fireRegularInfo(QVariant::fromValue(fakeInfo));
-			
-			//模具关闭
-			fakeInfo.U65Info.AD_2 = 3;
-			fakeInfo.U65Info.IO1_IN &= ~(1 << 2);
-			emit fireRegularInfo(QVariant::fromValue(fakeInfo));
-
-			//正常数据
-			if (!readRecData(info, fakeInfo))
-				return;
-			emit fireRegularInfo(QVariant::fromValue(fakeInfo));
-			recNum1_++;
-			return;
-		}
-
-		for (int index = 0; index < 20; index++) {
-
-			if (info.U65Info.REC_NO1 > recNum1_) {
-				U65RawData fakeInfo;
-				if (!readRecData(info, fakeInfo))
-					return;
-				//通知数据处理线程
-				emit fireRegularInfo(QVariant::fromValue(fakeInfo));
-				recNum1_++;
-			}
-			else if (info.U65Info.REC_NO1 < recNum1_) {
-				//旧软件有这部分逻辑，拷贝过来。但正常情况不应该走到这里，只是为了记录异常情况进行分析。
-				qDebug() << "recNum1_ reset";
-				recNum1_ = info.U65Info.REC_NO1;
-			}
-			else {
-				if (info.U65Info.REC_NO2 > recNum2_) {
-					U65RawData fakeInfo;
-					if (!readRecData(info, fakeInfo,true))
-						return;
-					//通知数据处理线程
-					emit fireRegularInfo(QVariant::fromValue(fakeInfo));
-					recNum2_++;
-				}
-				else {
-					break;
-				}
-			}
-		}
-
-		
-	}
-	else {
-		if (recNum1_ != 0) {
-			recNum1_ = 0;
-			recNum2_ = 0;
-			qDebug() << info.U65Info.U65_MODE;
-		}		
-	}
 }
 
 
@@ -472,6 +355,8 @@ static int __historyTest = 1;
 
 void CommunicationThread::timerFunc()
 {
+#ifdef _DEBUG
+#endif
 	if (!commCtrlQueue_.empty()) {
 		ctrlMtx_.lock();
 		QJsonObject obj = commCtrlQueue_.front();
@@ -521,7 +406,7 @@ void CommunicationThread::timerFunc()
 		looseFireRealData(obj);
 
 #ifdef _DEBUG
-		if (0) {
+		if (1) {
 			m_socket->connectToHost(m_deviceAddress, m_port);
 			if (!m_socket->waitForConnected()) {
 				//log(m_deviceAddress, m_socket->errorString());

@@ -101,16 +101,17 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 	obj["angle"] = *pHex32;//扭转机  角度
 
 
-	obj["twistCount"] = (recvData[12 + 0xD0] & 0xff) +
+	U65Info_.twistingCount = (recvData[12 + 0xD0] & 0xff) +
 		(recvData[12 + 0xD1] & 0xff) * 0x100 +
 		(recvData[12 + 0xD2] & 0xff) * 0x10000 +
 		(recvData[12 + 0xD3] & 0xff) * 0x1000000;//扭转机  测试次数
+	obj["twistCount"] = U65Info_.twistingCount;
 
-
-	obj["twistCount_SIN"] = (recvData[12 + 0x94] & 0xff) +
+	U65Info_.twistingCountSin = (recvData[12 + 0x94] & 0xff) +
 		(recvData[12 + 0x95] & 0xff) * 0x100 +
 		(recvData[12 + 0x96] & 0xff) * 0x10000 +
 		(recvData[12 + 0x97] & 0xff) * 0x1000000;//扭转机  测试次数
+	obj["twistCount_SIN"] = U65Info_.twistingCountSin;
 
 
 	Hex32 = (recvData[12 + 0x34] & 0xff) +
@@ -144,7 +145,7 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 		(recvData[12 + 0x43] & 0xff) * 0x1000000;
 	U65Info_.AD_2 = *pHex32; //发泡力
 	obj["P"] = U65Info_.AD_2;
-	obj["torque"] = U65Info_.AD_2;//扭转机  扭矩
+	obj["torque"] = U65Info_.AD_2;// / 1000;//扭转机  扭矩
 
 
 	U65Info_.sDoubleQuotation = (U65Info_.sStar) * sin(U65Info_.SITA * 3.14 / 180);
@@ -353,6 +354,71 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 		U65Info_.stru_ReadU65ext.md_BREAK_LEVEL = Hex32;
 		obj["BREAK_LEVEL"] = U65Info_.stru_ReadU65ext.md_BREAK_LEVEL;
 	}
+
+	//读取0B00
+	{
+		QByteArray buffer;
+		buffer.fill(0x00, 528);
+		setCmd(E_Mode::Read, buffer);
+		setLength(0xFB, buffer);
+		setAddr(0x0B00, buffer);
+		calcSum(buffer);
+		if (!socket->writeData(buffer)) {
+			err = "writeData error " + socket->socketError();
+			return false;
+		}
+		QByteArray recvData;
+		if (!socket->readData(recvData)) {
+			err = "readData error " + socket->socketError();
+			return false;
+		}
+		if (!checkSum(recvData)) {
+			err = "readData error ,checksum error";
+			return false;
+		}
+
+		/**
+		 * 判断数据正确性
+		 *
+		 */
+		if ((recvData[4] & 0xff) != 0x52 || (recvData[5] & 0xff) != 0x44 || (recvData[6] & 0xff) != 0xFB) {
+			//0A00地址不检查 旧版软件未检查，只检查0900
+			err = "0A00 readData error ,data error";
+			return false;
+		}
+
+
+
+		Hex32 = (recvData[12 + 0x58] & 0x00ff)
+			+ (recvData[12 + 0x59] & 0x00ff) * 0x0100
+			+ (recvData[12 + 0x5a] & 0x00ff) * 0x010000
+			+ (recvData[12 + 0x5b] & 0x00ff) * 0x01000000;
+		obj["AD_1_GAIN"] = *pHex32; //
+
+
+
+		Hex32 = (recvData[12 + 0x5C] & 0x00ff)
+			+ (recvData[12 + 0x5D] & 0x00ff) * 0x0100
+			+ (recvData[12 + 0x5E] & 0x00ff) * 0x010000
+			+ (recvData[12 + 0x5F] & 0x00ff) * 0x01000000;
+		obj["AD_1_CAP"] = *pHex32; //
+
+
+		Hex32 = (recvData[12 + 0x68] & 0x00ff)
+			+ (recvData[12 + 0x69] & 0x00ff) * 0x0100
+			+ (recvData[12 + 0x6a] & 0x00ff) * 0x010000
+			+ (recvData[12 + 0x6b] & 0x00ff) * 0x01000000;
+		obj["AD_2_GAIN"] = *pHex32; //
+
+
+		Hex32 = (recvData[12 + 0x6C] & 0x00ff)
+			+ (recvData[12 + 0x6D] & 0x00ff) * 0x0100
+			+ (recvData[12 + 0x6E] & 0x00ff) * 0x010000
+			+ (recvData[12 + 0x6F] & 0x00ff) * 0x01000000;
+		obj["AD_2_CAP"] = *pHex32; //
+
+	}
+
 	auto machType = machineType();
 	switch (machType)
 	{
@@ -379,7 +445,7 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 		err = "readInt32 error " + socket->socketError();
 		return false;
 	}
-
+	//qDebug() << "U65Info_.REAL_MSG_CT" << U65Info_.REAL_MSG_CT;
 	//当前采样率
 	if (!readInt32(socket, 0x080c, U65Info_.SAMPLE_RATE, err)) {
 		err = "readInt32 error " + socket->socketError();
@@ -430,19 +496,19 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 				(recvData[12 + 0x06 + i * 16] & 0xff) * 0x10000 +
 				(recvData[12 + 0x07 + i * 16] & 0xff) * 0x1000000;
 			pHex32 = (float*)&Hex32;
-			U65Info_.AD2[i] = *pHex32;
+			U65Info_.X[i] = *pHex32;
 			Hex32 = (recvData[12 + 0x08 + i * 16] & 0xff) +
 				(recvData[12 + 0x09 + i * 16] & 0xff) * 0x100 +
 				(recvData[12 + 0x0A + i * 16] & 0xff) * 0x10000 +
 				(recvData[12 + 0x0B + i * 16] & 0xff) * 0x1000000;
 			pHex32 = (float*)&Hex32;
-			U65Info_.X[i] = *pHex32;
+			U65Info_.YZ_MM[i] = *pHex32;
 			Hex32 = (recvData[12 + 0x0C + i * 16] & 0xff) +
 				(recvData[12 + 0x0D + i * 16] & 0xff) * 0x100 +
 				(recvData[12 + 0x0E + i * 16] & 0xff) * 0x10000 +
 				(recvData[12 + 0x0F + i * 16] & 0xff) * 0x1000000;
 			pHex32 = (float*)&Hex32;
-			U65Info_.YZ_MM[i] = *pHex32;
+			U65Info_.AD2[i] = *pHex32;
 
 
 			

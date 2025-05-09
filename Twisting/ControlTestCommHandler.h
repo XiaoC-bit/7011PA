@@ -43,6 +43,7 @@ private:
 	bool setYZGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
 	bool setADGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err);
+	bool setADCAP(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
 	//写入采样率
 	bool setSamplingRate(CommunicationThread* socket, QJsonObject& obj, QString& err);

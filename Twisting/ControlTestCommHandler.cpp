@@ -54,6 +54,9 @@ bool ControlTestCommHandler::commFunc(CommunicationThread* socket, QJsonObject& 
 	else if (type == "setADGAIN") {
 		return setADGAIN(socket, obj, err);
 	}
+    else if (type == "setADCAP") {
+		return setADCAP(socket, obj, err);
+    }
 	return false;
 }
 
@@ -383,6 +386,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         return false;
     }*/
     int16_t mi_Add = 0;
+    int zeroType = 0;
     //遍历zeroModeList
     for (int i = 0; i < zeroModeList.length(); i++)
     {
@@ -390,16 +394,41 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         {
             //mi_Add的第4个bit写入1
             mi_Add |= 0x10;
+            zeroType += 1;
         }
         else if (zeroModeList[i] == "angleZero")
         {
             //mi_Add的第1、2个bit写入1
             mi_Add |= 0x03;
+            zeroType += 2;
         }
         else if (zeroModeList[i] == "angleZeroAndTorqueZero") {
             //mi_Add的第3个bit写入1
 
             mi_Add |= 0x08;
+            zeroType += 3;
+        }
+    }
+
+    if(zeroType > 0)
+    {
+        //ABS归零
+        QByteArray buffer;
+
+        buffer.clear();
+        packPC_KEY(0x06, 0x1F, buffer);
+        if (!socket->writeData(buffer)) {
+            err = "writeData error " + socket->socketError();
+            return false;
+        }
+        QByteArray recvData;
+        if (!socket->readData(recvData)) {
+            err = "readData error " + socket->socketError();
+            return false;
+        }
+        if (!checkSum(recvData)) {
+            err = "readData error ,checksum error";
+            return false;
         }
     }
 
@@ -1120,6 +1149,29 @@ bool ControlTestCommHandler::setYZGAIN(CommunicationThread* socket, QJsonObject&
 }
 
 
+bool ControlTestCommHandler::setADCAP(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+    int ad_number = obj["AD"].toInt();
+    float gain = obj["CAP"].toDouble();
+    QByteArray buffer;
+    buffer.fill(0x00, 528);
+    packPC_KEY(0x0e, ad_number - 1, gain, buffer);
+
+    if (!socket->writeData(buffer)) {
+        err = "writeData error " + socket->socketError();
+        return false;
+    }
+    QByteArray recvData;
+    if (!socket->readData(recvData)) {
+        err = "readData error " + socket->socketError();
+        return false;
+    }
+    if (!checkSum(recvData)) {
+        err = "readData error ,checksum error";
+        return false;
+    }
+    return true;
+}
+
 bool ControlTestCommHandler::setADGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err) {
     int ad_number = obj["AD"].toInt();
 	float gain = obj["GAIN"].toDouble();
@@ -1148,7 +1200,7 @@ bool ControlTestCommHandler::zero(CommunicationThread* socket, QJsonObject& obj,
     QByteArray buffer;
 
     buffer.clear();
-    packPC_KEY(0x06,0x1E, buffer);
+    packPC_KEY(0x06,0x1F, buffer);
     if (!socket->writeData(buffer)) {
         err = "writeData error " + socket->socketError();
         return false;

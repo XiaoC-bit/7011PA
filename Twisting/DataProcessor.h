@@ -56,6 +56,7 @@ private:
 	 */
 	void  handleRegularInfoFunc(const U65RawData& info);
 
+	void record(const U65RawData& info);
 	/**
 	 * 上一个状态是测试中.
 	 * 
@@ -165,6 +166,7 @@ private:
 	QMap<QString, std::shared_ptr< MsgHandler>> handlers_;
 
 	QVector< TwistingData> vecTwistingData_;// 记录当前的测试数据
+	size_t recordCount_;// 记录当前的测试数据点数
 
 	bool lastTesting_;// 上一次循环是否处于测试状态
 	bool curTesting_;//本次循环是否处于测试状态
