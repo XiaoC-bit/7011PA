@@ -206,6 +206,9 @@
     <QtMoc Include="PIDCommHandler.h">
       <Filter>U70\Channel</Filter>
     </QtMoc>
+    <QtMoc Include="TemiSp3Modbus.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Twisting.rc">

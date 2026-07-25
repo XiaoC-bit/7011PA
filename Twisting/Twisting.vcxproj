@@ -37,12 +37,12 @@
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
     <QtInstall>msvc2017_64</QtInstall>
-    <QtModules>core;sql;gui;widgets;webchannel;websockets;webengine;webenginewidgets;webview</QtModules>
+    <QtModules>core;sql;gui;widgets;serialport;webchannel;websockets;serialbus;webengine;webenginewidgets;webview</QtModules>
     <QtBuildConfig>debug</QtBuildConfig>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" Label="QtSettings">
     <QtInstall>msvc2017_64</QtInstall>
-    <QtModules>core;sql;gui;widgets;webchannel;websockets;webengine;webenginewidgets;webview</QtModules>
+    <QtModules>core;sql;gui;widgets;webchannel;websockets;serialbus;webengine;webenginewidgets;webview</QtModules>
     <QtBuildConfig>release</QtBuildConfig>
   </PropertyGroup>
   <Target Name="QtMsBuildNotFound" BeforeTargets="CustomBuild;ClCompile" Condition="!Exists('$(QtMsBuild)\qt.targets') or !Exists('$(QtMsBuild)\qt.props')">
@@ -153,6 +153,7 @@
     <QtMoc Include="PIDCommHandler.h" />
     <ClInclude Include="httplib.h" />
     <ClInclude Include="lttb.hpp" />
+    <QtMoc Include="TemiSp3Modbus.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="ToolDefine.h" />
   </ItemGroup>
