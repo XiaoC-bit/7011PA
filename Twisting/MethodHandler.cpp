@@ -132,6 +132,7 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
     double stepTime = 0;
 
     QString direction = "";
+    QString ad_direction = "";
 
     if (mode == "destructive")
     {
@@ -158,6 +159,12 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
         }
         direction = testModeConfig["direction"].toString();
 
+		if (testModeConfig["adDirection"].isNull())
+		{
+			qDebug() << "adDirection error";
+			return false;
+		}
+		ad_direction = testModeConfig["adDirection"].toString();
 
     }
     else if (mode == "static")
@@ -372,6 +379,14 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
     }
     double moveSpeed = configForm["moveSpeed"].toDouble();
 
+    //是否回位
+    if (configForm["specimenReturn"].isNull())
+    {
+        qDebug() << "specimenReturn error";
+        return false;
+    }
+	int specimenReturn = configForm["specimenReturn"].toInt();
+
     QString strSql = QString("select * from method_config where name = '%1'").arg(methodName);
     if (!query.exec(strSql))
     {
@@ -403,8 +418,8 @@ specimen_name,batch_number,production_date,operator,lab_temperature,\
 lab_humidity,mode,torsion_speed,torsion_unit,initial_mode,\
 initial_load_value,unit,zero_mode,start_point,end_condition,\
 max_torque,max_angle,break_sensitivity,move_speed,static_mode,\
-constant_angle,constant_torque,cycle_count,dynamic_mode,torsion_frequency,step_time,specimen_number,remarks,is_current,delay_time,direction) values('%1','%2','%3','%4','%5','%6',%7,%8,\
-'%9',%10,'%11','%12',%13,'%14','%15',%16,%17,%18,%19,%20,%21,'%22',%23,%24,%25,'%26',%27,%28,'%29','%30',%31,%32,'%33')")
+constant_angle,constant_torque,cycle_count,dynamic_mode,torsion_frequency,step_time,specimen_number,remarks,is_current,delay_time,direction,specimenReturn,ad_direction) values('%1','%2','%3','%4','%5','%6',%7,%8,\
+'%9',%10,'%11','%12',%13,'%14','%15',%16,%17,%18,%19,%20,%21,'%22',%23,%24,%25,'%26',%27,%28,'%29','%30',%31,%32,'%33',%34,'%35')")
                  .arg(methodName)
                  .arg(methodRemark)
                  .arg(specimenName)
@@ -437,7 +452,9 @@ constant_angle,constant_torque,cycle_count,dynamic_mode,torsion_frequency,step_t
         .arg(remarks)
         .arg(1)
         .arg(delayTime)
-        .arg(direction);
+        .arg(direction)
+        .arg(specimenReturn)
+        .arg(ad_direction);
     if (!query.exec(strSql))
     {
         qDebug() << "Failed to fetch data:";
@@ -553,6 +570,8 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
     double torsionFrequency = 0;
     double stepTime = 0;
     QString direction = "";
+    QString ad_direction = "";
+
 
     if (mode == "destructive")
     {
@@ -579,7 +598,12 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
         }
         direction = testModeConfig["direction"].toString();
 
-
+		if (testModeConfig["adDirection"].isNull())
+		{
+			qDebug() << "adDirection error";
+			return false;
+		}
+		ad_direction = testModeConfig["adDirection"].toString();
         
     }
     else if (mode == "static")
@@ -797,6 +821,14 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
     }
     double moveSpeed = configForm["moveSpeed"].toDouble();
 
+    //是否回位
+    if (configForm["specimenReturn"].isNull())
+    {
+        qDebug() << "specimenReturn error";
+        return false;
+    }
+    int specimenReturn = configForm["specimenReturn"].toInt();
+
     QString strSql;
     strSql = QString("UPDATE method_config SET \
         specimen_name = '%1',\
@@ -825,10 +857,12 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
         dynamic_mode = '%24',\
         torsion_frequency = %25,\
         step_time = %26,\
-        specimen_number = %27,\
+        specimen_number = '%27',\
         remarks = '%28',\
         delay_time = %29,\
         direction = '%30'\
+        ,specimenReturn = %31\
+        ,ad_direction = '%32' \
         where is_current = 1\
         ")
         .arg(specimenName)
@@ -861,6 +895,8 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
         .arg(remarks)
         .arg(delayTime)
         .arg(direction)
+		.arg(specimenReturn)
+		.arg(ad_direction)
         ;
 
   

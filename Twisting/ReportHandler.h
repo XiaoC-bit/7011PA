@@ -31,6 +31,11 @@ private:
 	//导出历史数据
 	[[nodiscard]] bool exportHistoryData(const QSqlDatabase& configDb, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
 
+	//删除历史数据
+	[[nodiscard]] bool deleteHistoryData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
+
+	//再计算
+	[[nodiscard]] bool recalculateHistoryData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
 
 	//查询报告数据
 	[[nodiscard]] bool fetchReportData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
@@ -43,4 +48,6 @@ private:
 
 	//查询报告历史数据
 	[[nodiscard]] bool fetchReportHistoryData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
+
+	void sumupQueue(const QSqlDatabase& db, const QSqlDatabase& dataDb);
 };

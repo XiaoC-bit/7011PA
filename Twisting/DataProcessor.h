@@ -56,7 +56,7 @@ private:
 	 */
 	void  handleRegularInfoFunc(const U65RawData& info);
 
-	void record(const U65RawData& info);
+	void record(const U65RawData& info,bool forceInput = false);
 	/**
 	 * 上一个状态是测试中.
 	 * 

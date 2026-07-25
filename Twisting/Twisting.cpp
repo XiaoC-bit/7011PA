@@ -40,6 +40,7 @@ Twisting::Twisting(QWidget *parent)
 	else {
 		QCefSetting setting;
 		QString uri = QString("http://localhost:%1").arg(gConfig.frontPort);
+		//uri = QString("http://localhost:%1").arg(3001);
 		cefViewWidget_ = std::unique_ptr< QCefView>(new CefViewWidget(uri, &setting, this));
 		this->setCentralWidget(cefViewWidget_.get());
 		this->setMinimumWidth(minWidth);

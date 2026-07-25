@@ -80,6 +80,10 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 	obj["U65_MSG2"] = U65Info_.U65_MSG2;
 	obj["U65_MSG3"] = U65Info_.U65_MSG3;
 
+	int16_t REMOTE_KEY = (recvData[12 + 0x14] & 0xff) + (recvData[12 + 0x15] & 0xff) * 0x100;
+	//qDebug() << "REMOTE_KEY" << REMOTE_KEY;
+	obj["REMOTE_KEY"] = REMOTE_KEY;
+
 	//读取DF SET的数据
 	int ir_temp = (recvData[12 + 0xC8] & 0x00ff) + (recvData[12 + 0xC9] & 0x00ff) * 0x0100;
 	obj["DF_SET_IR_TEMP"] = ir_temp;
@@ -311,6 +315,10 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 		}
 		obj["Sys_Flag1"] = (int)U65Info_.Sys_Flag1;
 
+
+		U65Info_.DIR_FLAG = (recvData[0x16 + 12] & 0xff) + (recvData[0x17 + 12] & 0xff) * 0x100;
+		obj["DIR_FLAG"] = (int)U65Info_.DIR_FLAG;
+
 		Hex32 = (recvData[12 + 0x28] & 0x00ff) + (recvData[12 + 0x29] & 0x00ff) * 0x0100 + (recvData[12 + 0x2A] & 0x00ff) * 0x010000 + (recvData[12 + 0x2B] & 0x00ff) * 0x01000000;
 		U65Info_.stru_ReadU65ext.md_S_RATE = *pHex32;
 		obj["S_RATE"] = U65Info_.stru_ReadU65ext.md_S_RATE;
@@ -513,7 +521,7 @@ bool NormalCommHandler::realData(CommunicationThread* socket, QJsonObject& obj, 
 
 			
 			
-		/*	qDebug() << "AD1[" << i << "]" << U65Info_.AD1[i] << "\n"
+			/*qDebug() << "AD1[" << i << "]" << U65Info_.AD1[i] << "\n"
 				<< "X[" << i << "]" << U65Info_.X[i] << "\n"
 				<< "YZ_MM[" << i << "]" << U65Info_.YZ_MM[i] << "\n"
 				<< "AD2[" << i << "]" << U65Info_.AD2[i];*/

@@ -175,7 +175,7 @@ void CommunicationThread::normalTimerFunc() {
 		return fakeData(info);
 	}
 	else {
-		qDebug() << "fire " << info.U65Info.REAL_MSG_CT;
+		//qDebug() << "fire " << info.U65Info.REAL_MSG_CT;
 		//¶ÁÈ¡»º³åÇø
 		emit fireRegularInfo(QVariant::fromValue(info));
 	}
@@ -406,7 +406,7 @@ void CommunicationThread::timerFunc()
 		looseFireRealData(obj);
 
 #ifdef _DEBUG
-		if (1) {
+		if (0) {
 			m_socket->connectToHost(m_deviceAddress, m_port);
 			if (!m_socket->waitForConnected()) {
 				//log(m_deviceAddress, m_socket->errorString());

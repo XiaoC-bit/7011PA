@@ -104,9 +104,9 @@ bool ReportHandler::exportHistoryData(const QSqlDatabase& configDb, const QSqlDa
 
 			out << time;
 			out << ",";
-			out << AD2;
-			out << ",";
 			out << YZ_MM;
+			out << ",";
+			out << AD2;
 			out << ",";
 			out << AD1;
 			out << "\n";
@@ -128,6 +128,104 @@ bool ReportHandler::exportHistoryData(const QSqlDatabase& configDb, const QSqlDa
 	return true;
 }
 
+
+bool ReportHandler::deleteHistoryData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response) {
+
+	QString strMethod = obj["method"].toString();
+
+	QSqlDatabase methodDb;
+	if (!getTestDataDB("project", strMethod, methodDb))
+	{
+		qDebug() << "getTestDataDB";
+		return false;
+	}
+
+	QSqlQuery testQuery(methodDb);
+
+	QJsonArray arr = obj["queue_id"].toArray();
+	for (const QJsonValue& value : arr)
+	{
+		int queueId = value.toInt();
+		QString strSql = QString("delete from detail where queue_id = %1").arg(queueId);
+		if (!testQuery.exec(strSql)) {
+			qDebug() << "Failed to fetch data:";
+			qDebug() << testQuery.lastError().text();
+			return false;
+		}
+		strSql = QString("delete from queue where id = %1").arg(queueId);
+		if (!testQuery.exec(strSql)) {
+			qDebug() << "Failed to fetch data:";
+			qDebug() << testQuery.lastError().text();
+			return false;
+		}
+
+		strSql = QString("delete from result where queue_id = %1").arg(queueId);
+		if (!testQuery.exec(strSql)) {
+			qDebug() << "Failed to fetch data:";
+			qDebug() << testQuery.lastError().text();
+			return false;
+		}
+
+	}
+
+
+
+	
+	QJsonObject jsonObj;
+	jsonObj["__channel"] = channel_ + "-delete-history-data";
+	jsonObj["status"] = "success";
+	jsonObj["message"] = "delete data success";
+	QJsonDocument jsonDoc1(jsonObj);
+	response = jsonDoc1.toJson();
+	return true;
+}
+
+extern double findClosestAngle(
+	const std::vector<TwistingData>& data,
+	double targetTorque,
+	const char* phase = "all" // "rise", "fall", "rise2", "all"
+);
+
+extern double findClosestTorque(
+	const std::vector<TwistingData>& data,
+	double targetAngle,
+	const char* phase = "all" // "rise", "fall", "rise2", "all"
+);
+
+extern void sumupQueueFunc(
+	const QSqlDatabase& configDb,
+	const QSqlDatabase& testDataDb,
+	const int queueId_
+);
+
+bool ReportHandler::recalculateHistoryData(const QSqlDatabase& configDb, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response) {
+	
+	QString strMethod = obj["method"].toString();
+
+	QSqlDatabase testDataDb;
+	if (!getTestDataDB("project", strMethod, testDataDb))
+	{
+		qDebug() << "getTestDataDB";
+		return false;
+	}
+	QJsonArray arr = obj["queue_id"].toArray();
+	for (const QJsonValue& value : arr)
+	{
+		int queueId = value.toInt();
+		sumupQueueFunc(configDb, testDataDb, queueId);
+	}
+
+	
+
+
+	QJsonObject jsonObj;
+	jsonObj["__channel"] = channel_ + "-recalculate-history-data";
+	jsonObj["status"] = "success";
+	QJsonDocument jsonDoc1(jsonObj);
+	response = jsonDoc1.toJson();
+
+	return true;
+}
 
 bool ReportHandler::exportData(const QSqlDatabase& configDb, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response) {
 	QFile file;
@@ -201,9 +299,9 @@ bool ReportHandler::exportData(const QSqlDatabase& configDb, const QSqlDatabase&
 				
 			batchData = QString("%1,%2,%3,%4\n")
 			.arg(time)
-			.arg(AD2)
 			.arg(YZ_MM)
-			.arg(AD1);;
+			.arg(AD2)
+			.arg(AD1);
 			out << batchData;
 		}
 	}
@@ -375,11 +473,258 @@ bool ReportHandler::fetchReportData(const QSqlDatabase& db, const QSqlDatabase& 
 }
 
 
+void ReportHandler::sumupQueue(const QSqlDatabase& configDb, const QSqlDatabase& testDataDb) {
+	//读取report_setting
+	QString strSql = QString("select * from report_setting ");
+	QSqlQuery configQuery(configDb);
+	if (!configQuery.exec(strSql)) {
+		qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+		qDebug() << "deviceId :  " << deviceId_ << "\t" << configDb.lastError().text();
+		return;
+	}
+	QVector<QString> reportSetting;
+
+	struct _TEST_DATA {
+		double torque;
+		double angle;
+		double torque2;
+		double angle2;
+
+
+		_TEST_DATA() {
+
+			torque = 0;
+			angle = 0;;
+			torque2 = 0;;
+			angle2 = 0;;
+		}
+	};
+
+
+	std::pair<double, double> torqueToAnglePair;//最大扭矩对应的角度
+	std::pair<double, double> angleToTorquePair;//最大角度对应的扭矩
+	torqueToAnglePair.first = 0;
+	torqueToAnglePair.second = 0;
+	angleToTorquePair.first = 0;
+	angleToTorquePair.second = 0;
+
+	typedef std::vector< _TEST_DATA> TEST_DATA_VEC;
+	QMap<int, TEST_DATA_VEC> ReportTorqueToAngle;//int是循环次数  第二个元素是记录所有需要找的扭矩对应的角度
+	QMap<int, TEST_DATA_VEC> ReportAngleToTorque;//int是循环次数  第二个元素是记录所有需要找的角度对应的扭矩
+	QMap<int, TEST_DATA_VEC> ReportStiffnessAngle;//int是循环次数  第二个元素是记录所有需要找的扭转刚度
+	while (configQuery.next())
+	{
+		QString name = configQuery.value("name").toString();
+		//如果前面字符串是"torque"
+		if (name.startsWith("torque-")) {
+			//去掉前面字符串
+			name = name.remove(0, 7);
+
+			//剩下的格式是 1-2  提取这两个数字，可能是小数
+			QStringList list = name.split("-");
+			if (list.size() != 2) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+				continue;
+			}
+
+			bool ok1, ok2;
+			double torque = list[0].toDouble(&ok1);
+			int twistCount = list[1].toInt(&ok2);
+			if (!ok1 || !ok2) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+				continue;
+			}
+			auto it = ReportTorqueToAngle.find(twistCount);
+
+			if (it == ReportTorqueToAngle.end()) {
+				ReportTorqueToAngle[twistCount] = std::vector< _TEST_DATA>();
+			}
+			_TEST_DATA testData;
+			testData.torque = torque;
+			ReportTorqueToAngle[twistCount].push_back(testData);
+		}
+		//如果前面字符串是"angle"
+		else if (name.startsWith("angle-")) {
+			//去掉前面字符串
+			name = name.remove(0, 6);
+			//剩下的格式是 1-2  提取这两个数字，可能是小数
+			QStringList list = name.split("-");
+			if (list.size() != 2) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+				continue;
+			}
+
+			bool ok1, ok2;
+			double angle = list[0].toDouble(&ok1);
+			int twistCount = list[1].toInt(&ok2);
+			if (!ok1 || !ok2) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+				continue;
+			}
+			auto it = ReportAngleToTorque.find(twistCount);
+
+			if (it == ReportAngleToTorque.end()) {
+				ReportAngleToTorque[twistCount] = std::vector< _TEST_DATA>();
+			}
+			_TEST_DATA testData;
+			testData.angle = angle;
+			ReportAngleToTorque[twistCount].push_back(testData);
+		}
+		//如果前面字符串是"stiffness"
+		else if (name.startsWith("stiffness-")) {
+			//去掉前面字符串
+			name = name.remove(0, 10);
+			//剩下的格式是 1-2  提取这两个数字，可能是小数
+			QStringList list = name.split("-");
+			if (list.size() != 3) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+				continue;
+			}
+			bool ok1, ok2, ok3;
+			double torque = list[0].toDouble(&ok1);
+			double torque2 = list[1].toDouble(&ok2);
+			int twistCount = list[2].toInt(&ok3);
+			if (!ok1 || !ok2 || !ok3) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+				continue;
+			}
+
+			auto it = ReportStiffnessAngle.find(twistCount);
+
+			if (it == ReportStiffnessAngle.end()) {
+				ReportStiffnessAngle[twistCount] = std::vector< _TEST_DATA>();
+			}
+			_TEST_DATA testData;
+			testData.torque = torque;
+			testData.torque2 = torque2;
+			ReportStiffnessAngle[twistCount].push_back(testData);
+		}
+
+		reportSetting.push_back(configQuery.value("name").toString());
+	}
+
+	QString testMode = "";
+	strSql = QString("select method_config.* from method_config join system_config on system_config.current_method = method_config.name");
+	if (!configQuery.exec(strSql)) {
+		qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+		qDebug() << "deviceId :  " << deviceId_ << "\t" << configDb.lastError().text();
+		return;
+	}
+	if (configQuery.next()) {
+		testMode = configQuery.value("mode").toString();
+	}
+
+	QVector< TwistingData> vecTwistingData_;// 记录当前的测试数据
+
+	QMap<int, std::vector<TwistingData>> perTwistingData;
+	{
+#ifdef _DEBUG
+		//queueId_ = 67;
+#endif
+		strSql = QString("select * from detail where queue_id=%1").arg(229);
+		QSqlQuery testQuery(testDataDb);
+		if (!testQuery.exec(strSql)) {
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+			return;
+		}
+
+		if (testQuery.next()) {
+			QByteArray data = testQuery.value("data").toByteArray();
+			QDataStream stream(&data, QIODevice::ReadWrite);
+			int total = testQuery.value("totalNumber").toInt();
+			//int queueId = testQuery.value("id").toInt();
+			//qDebug() << "deviceId :  " << deviceId_ << "\t" << "totalNumber:" << total;
+			//qDebug() << "deviceId :  " << deviceId_ << "\t" << "queueId:" << queueId;
+			//qDebug() << "deviceId :  " << deviceId_ << "\t" << "data:" << data.size();
+			//qDebug() << "deviceId :  " << deviceId_ << "\t" << "data:" << data.toHex();
+
+			for (size_t i = 0; i < total; i++) {
+				ExamplePoint point;
+				float AD1, AD2, YZ_MM, time;
+				int c1, c2;
+				stream >> AD1 >> AD2 >> YZ_MM >> time >> c1 >> c2;
+				point.AD1 = AD1;
+				point.AD2 = AD2;
+				point.YZ_mm = YZ_MM;
+				point.time = time;
+
+				TwistingData twistingData;
+				twistingData.torque = AD2;
+				twistingData.angle = YZ_MM;
+				twistingData.testTimer = time;
+
+				if (testMode == "dynamic") {
+					twistingData.twistCount = c2;
+				}
+				else {
+					twistingData.twistCount = c1;
+				}
+
+				vecTwistingData_.push_back(twistingData);
+				//将不同的twistCount，存入perTwistingData
+				auto it = perTwistingData.find(twistingData.twistCount);
+				if (it == perTwistingData.end()) {
+					perTwistingData[twistingData.twistCount] = std::vector<TwistingData>();
+				}
+				perTwistingData[twistingData.twistCount].push_back(twistingData);
+			}
+
+
+
+		}
+	}
+
+	double lastAngle = 0;
+	double lastTorque = 0;
+	if (vecTwistingData_.size()) {
+		lastAngle = vecTwistingData_.at(0).angle;
+		lastTorque = vecTwistingData_.at(0).torque;
+	}
+
+	//数据是类似一个sin波形，根据此属性，找到对应的报告数据
+	//一开始的扭矩和角度都是0
+	for (auto& it : vecTwistingData_) {
+
+		int twistCount = it.twistCount;
+
+		if (it.torque > torqueToAnglePair.first) {
+			torqueToAnglePair.first = it.torque;
+			torqueToAnglePair.second = it.angle;
+		}
+		if (it.angle > angleToTorquePair.first) {
+			angleToTorquePair.first = it.angle;
+			angleToTorquePair.second = it.torque;
+		}
+
+		/*
+
+	QMap<int, TEST_DATA_VEC> ReportTorqueToAngle;
+	QMap<int, TEST_DATA_VEC> ReportAngleToTorque;
+	QMap<int, TEST_DATA_VEC> ReportStiffnessAngle;
+		*/
+
+	}
+
+
+	{
+		//插入角度最大值
+		strSql = QString("insert into result(queue_id,name,data) values(%1,'maxAngleToTorque',%2)").arg(229).arg(angleToTorquePair.second);
+
+		
+		//插入扭矩最大值
+		strSql = QString("insert into result(queue_id,name,data) values(%1,'maxTorqueToAngle',%2)").arg(229).arg(torqueToAnglePair.second);
+		
+	}
+
+
+}
 
 
 bool ReportHandler::liveTestingData(const QSqlDatabase& configDb, const QSqlDatabase& dataDb, const QJsonObject &recvObj, QString &response)
 {
     QSqlQuery testQuery(dataDb);
+	//sumupQueue(configDb, dataDb);
     int queueId  =0;
 	QString strSql = QString("select * from queue where current=1");
 	if (!testQuery.exec(strSql)) {
@@ -411,22 +756,7 @@ bool ReportHandler::liveTestingData(const QSqlDatabase& configDb, const QSqlData
 		data = testQuery.value("data").toByteArray();
 		
 	}
-	int mod = 0;
-	if (total < 10000) {
-		mod = 1;
-	}
-	else if (total < 10000) {
-		mod = 2;
-	}
-	else if (total < 100000) {
-		mod = 5;
-	}
-	else if (total < 1000000) {
-		mod = 10;
-	}
-	else {
-		mod = 20;
-	}
+	
 
 	const int DATA_COUNT = 5000;//保留样本数量
 
@@ -605,6 +935,10 @@ bool ReportHandler::fetchTestHistoryDetail(const QSqlDatabase& db, const QSqlDat
 bool ReportHandler::fetchHistoryData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response) {
 	
 	QString strMethod = obj["method"].toString();
+	QString strGroup = "";
+	if (!obj["group"].isNull()) {
+		strGroup = obj["group"].toString();	
+	}
 
 	QSqlDatabase methodDb;
 	if (!getTestDataDB("project", strMethod, methodDb))
@@ -617,6 +951,10 @@ bool ReportHandler::fetchHistoryData(const QSqlDatabase& db, const QSqlDatabase&
 	QSqlQuery query(methodDb);
 	//先查询total
 	QString strSql = QString("select count(*) as total from queue ;");
+	if (!strGroup.isEmpty()) {
+		strSql = QString("select count(*) as total from queue where remarks = '%1' ;").arg(strGroup);
+	}
+
 	if (!query.exec(strSql))
 	{
 		QString strErr = "Failed to fetch data:";
@@ -640,6 +978,10 @@ bool ReportHandler::fetchHistoryData(const QSqlDatabase& db, const QSqlDatabase&
 	int offset = pageSize * (page - 1);
 	strSql = QString("select * from queue order by id desc limit %1 offset %2 ")
 		.arg(pageSize).arg(offset);
+	if (!strGroup.isEmpty()) {
+		strSql = QString("select * from queue where remarks = '%1' order by id desc limit %2 offset %3 ")
+			.arg(strGroup).arg(pageSize).arg(offset);
+	}
 	if (!query.exec(strSql))
 	{
 		QString strErr = "Failed to fetch data:";
@@ -653,6 +995,9 @@ bool ReportHandler::fetchHistoryData(const QSqlDatabase& db, const QSqlDatabase&
 		return true;
 	}
 
+	QJsonArray groupArray;
+	QSet<QString> groupSet;
+
 	QJsonArray jsonArray;
 	while (query.next())
 	{
@@ -665,7 +1010,13 @@ bool ReportHandler::fetchHistoryData(const QSqlDatabase& db, const QSqlDatabase&
 		jsonQueueObj["lab_temperature"] = query.value("lab_temperature").toDouble();
 		jsonQueueObj["lab_humidity"] = query.value("lab_humidity").toDouble();
 		jsonQueueObj["specimen_number"] = query.value("specimen_number").toString();
-		jsonQueueObj["remarks"] = query.value("remarks").toString();
+		QString group = query.value("remarks").toString();//把remarks作为分组依据
+		jsonQueueObj["remarks"] = group;
+		if (!groupSet.contains(group))
+		{
+			groupSet.insert(group);
+			groupArray.append(group);
+		}
 		jsonArray.append(jsonQueueObj);
 	}
 
@@ -687,6 +1038,7 @@ bool ReportHandler::fetchHistoryData(const QSqlDatabase& db, const QSqlDatabase&
 	jsonObj["status"] = "success";
 	jsonObj["data"] = jsonArray;
 	jsonObj["columns"] = jsonColumns;
+	jsonObj["group"] = groupArray;
 	jsonObj["total"] = total;
 
 	QJsonDocument jsonDoc(jsonObj);
@@ -802,9 +1154,9 @@ bool ReportHandler::handleWsMsg(QJsonObject &recvObj, QString &response)
 		//计算耗时
 		QElapsedTimer timer;
 		timer.start();
-		qDebug() << "start time: " << timer.elapsed();
+		//qDebug() << "start time: " << timer.elapsed();
 		bool ret = liveTestingData(configDb, testDataDb, recvObj, response);
-		qDebug() << "end time: " << timer.elapsed();
+		//qDebug() << "end time: " << timer.elapsed();
 		return ret;
     }
 	else if (type == "fetch-test-history-detail") {
@@ -817,6 +1169,13 @@ bool ReportHandler::handleWsMsg(QJsonObject &recvObj, QString &response)
 	else if (type == "export-history-data")
 	{
 		return exportHistoryData(configDb, testDataDb, recvObj, response);
+	}
+	else if (type == "delete-history-data")
+	{
+		return deleteHistoryData(configDb, testDataDb, recvObj, response);
+	}
+	else if (type == "recalculate-history-data") {
+		return recalculateHistoryData(configDb, testDataDb, recvObj, response);
 	}
 	else if (type == "fetch-report-data")
 	{

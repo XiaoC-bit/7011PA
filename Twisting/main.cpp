@@ -255,30 +255,36 @@ int main(int argc, char *argv[])
 
 	// Æô¶¯ HTTP ·þÎñ
 	QString currentDir = QCoreApplication::applicationDirPath();
-	//startHttpServer(currentDir + "/FrontEnv", gConfig.frontPort);
-
-	QString pyHttpExe = dir.filePath(QString("FrontEnv/%1").arg(gConfig.frontExeName));
-	program.setWorkingDirectory(dir.filePath("FrontEnv/"));
-	//args.append("-h");
-	if (!gDebug) {
-		while (1) {
-			if (!terminateProcessByName(gConfig.frontExeName.toStdString()))
-				break;
-		}
-		program.start(pyHttpExe, args);
-		if (!program.waitForStarted()) {
-			qDebug() << "";
-			exit(0);
-		}
-		QObject::connect(&a, &QCoreApplication::aboutToQuit, [&program, pyHttpExe]() {
-			if (program.state() != QProcess::NotRunning) {
-				program.kill();
-				program.waitForFinished();
-				QString cmd = "taskkill /F /IM " + QFileInfo(pyHttpExe).fileName();
-				QProcess::execute(cmd);
-			}
-			});
+	if (1) {
+		startHttpServer(currentDir + "/FrontEnv", gConfig.frontPort);
 	}
+	else {
+		QString pyHttpExe = dir.filePath(QString("FrontEnv/%1").arg(gConfig.frontExeName));
+		program.setWorkingDirectory(dir.filePath("FrontEnv/"));
+		//args.append("-h");
+		if (!gDebug) {
+			while (1) {
+				if (!terminateProcessByName(gConfig.frontExeName.toStdString()))
+					break;
+			}
+			program.start(pyHttpExe, args);
+			if (!program.waitForStarted()) {
+				qDebug() << "";
+				exit(0);
+			}
+			QObject::connect(&a, &QCoreApplication::aboutToQuit, [&program, pyHttpExe]() {
+				if (program.state() != QProcess::NotRunning) {
+					program.kill();
+					program.waitForFinished();
+					QString cmd = "taskkill /F /IM " + QFileInfo(pyHttpExe).fileName();
+					QProcess::execute(cmd);
+				}
+				});
+		}
+	}
+	
+
+	
 	if (!gDebug) {
 
 

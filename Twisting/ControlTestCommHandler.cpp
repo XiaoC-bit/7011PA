@@ -1,6 +1,7 @@
 #include "ControlTestCommHandler.h"
 #include "DataDefine.h"
 #include <qjsonarray.h>
+#include <qjsondocument.h>
 ControlTestCommHandler::ControlTestCommHandler(ReadU65Struct& ref, QObject* parent)
 	: CommHandler(ref,parent)
 {}
@@ -31,7 +32,35 @@ bool ControlTestCommHandler::commFunc(CommunicationThread* socket, QJsonObject& 
 		return stopTest(socket, obj, err);
     }
 	else if (type == "transfer-method") {
-		return transferMehod(socket, obj, err);
+        bool ret = false;
+        for (int i = 0; i < 10; i++) {
+            ret = transferMehod(socket, obj, err);
+            qDebug() << "transfer-method ret:" << ret << err;
+            if (ret) {
+                break;
+            }
+        }
+
+        qDebug() << "final transfer-method ret:" << ret << err;
+        if (!ret) {
+            QJsonObject responseObj;
+            responseObj["__channel"] = obj["__channel"];
+            responseObj["__type"] = obj["__type"];
+			responseObj["status"] = "error";
+            obj = responseObj;
+            return true;
+        }
+
+        //写入PC KEY 0B，保存参数
+		QByteArray buffer;
+		buffer.fill(0x00, 528);
+		packPC_KEY(0x0B, buffer);
+		if (!socket->writeData(buffer)) {
+			err = "writeData error " + socket->socketError();
+			return false;
+		}
+
+        return ret;
 	}
 	else if (type == "zero") {
 		return zero(socket, obj, err);
@@ -42,6 +71,18 @@ bool ControlTestCommHandler::commFunc(CommunicationThread* socket, QJsonObject& 
     else if (type == "setXDIR") {
         return setXDIR(socket, obj, err);
     }
+    else if (type == "setAD1_DIR") {
+        return setAD1_DIR(socket, obj, err);
+    }
+    else if (type == "setAD2_DIR") {
+        return setAD2_DIR(socket, obj, err);
+    }
+	else if (type == "setAD1_UPDN") {
+		return setAD1_UPDN(socket, obj, err);
+	}
+	else if (type == "setAD2_UPDN") {
+		return setAD2_UPDN(socket, obj, err);
+	}
     else if (type == "setXGAIN") {
         return setXGAIN(socket, obj, err);
     }
@@ -99,6 +140,11 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     }
     QJsonObject configForm = recvObj["configForm"].toObject();
     QJsonObject testModeConfig = recvObj["testModeConfig"].toObject();
+    //把configForm转成字符串
+	qDebug() << "configForm:" << QJsonDocument(configForm).toJson(QJsonDocument::Indented);
+	qDebug() << "testModeConfig:" << QJsonDocument(testModeConfig).toJson(QJsonDocument::Indented);
+
+
 
     if (!testModeConfig["mode"].isString())
     {
@@ -356,7 +402,20 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     }
     QString direction = configForm["direction"].toString();
 
-    
+	if (testModeConfig["adDirection"].isNull())
+	{
+		qDebug() << "adDirection error";
+		return false;
+	}
+	QString adDirection = configForm["adDirection"].toString();
+
+	//是否回位
+	if (configForm["specimenReturn"].isNull())
+	{
+		qDebug() << "specimenReturn error";
+		return false;
+	}
+	int specimenReturn = configForm["specimenReturn"].toInt();
 
     //写入通用参数    
 
@@ -385,6 +444,14 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         err = "readData error ,checksum error";
         return false;
     }*/
+
+    int16_t SYNC_ZERO_FLAG = 0;
+	if (!readInt16(socket, 0x0a1a, SYNC_ZERO_FLAG, err))
+	{
+		err = "readInt16 error " + socket->socketError();
+		return false;
+	}
+
     int16_t mi_Add = 0;
     int zeroType = 0;
     //遍历zeroModeList
@@ -395,19 +462,37 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             //mi_Add的第4个bit写入1
             mi_Add |= 0x10;
             zeroType += 1;
+
+            //将SYNC_ZERO_FLAG的BIT 2 写入 1
+			SYNC_ZERO_FLAG |= 0x04;
+
+
         }
         else if (zeroModeList[i] == "angleZero")
         {
             //mi_Add的第1、2个bit写入1
             mi_Add |= 0x03;
             zeroType += 2;
+
+			//将SYNC_ZERO_FLAG的BIT 4 写入 1
+			SYNC_ZERO_FLAG |= 0x10;
         }
         else if (zeroModeList[i] == "angleZeroAndTorqueZero") {
             //mi_Add的第3个bit写入1
 
             mi_Add |= 0x08;
             zeroType += 3;
+
+
+            SYNC_ZERO_FLAG |= 0x10;
+            SYNC_ZERO_FLAG |= 0x04;
         }
+    }
+
+    if (!writeInt16(socket, 0x0a1a, SYNC_ZERO_FLAG, err))
+    {
+        err = "readInt16 error " + socket->socketError();
+        return false;
     }
 
     if(zeroType > 0)
@@ -431,6 +516,41 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             return false;
         }
     }
+	int16_t mi_PC_TEST_3 = 0;
+    if (!readInt16(socket, 0x0A7C, mi_PC_TEST_3, err)) {
+		err = "readInt16 error " + socket->socketError();
+		return false;
+    }
+    // 设置回位模式（0~5），你可以换成其他值如 2 = 暫停後回位，3 = 回極限 等
+    uint8_t returnMode = 0;  // 預設不回位
+    if (specimenReturn == 1) {
+        returnMode = 1;  // 立刻回位
+    }
+
+	qDebug() << "0A7C写入前" << mi_PC_TEST_3;
+    // 清除 Bit4~7，再設定
+    mi_PC_TEST_3 = (mi_PC_TEST_3 & ~0xF0) | ((returnMode & 0x0F) << 4);
+
+    //第4个bit置为1
+    //mi_PC_TEST_3 |= 0x10;
+
+	qDebug() << "0A7C写入后" << mi_PC_TEST_3;
+    //写入回位
+    if (!writeInt16(socket, 0x0A7C, mi_PC_TEST_3, err)) {
+		err = "writeInt16 error " + socket->socketError();
+		return false;
+    }
+
+
+    ////设置测试后的动作
+    //int16_t PC_TEST_3 = 0;
+    ////第4个bit置为1
+    //PC_TEST_3 |= 0x10;
+    //if (!writeInt16(socket, 0x0A7C, PC_TEST_3, err)) {
+    //    err = "writeInt16 error " + socket->socketError();
+    //    return false;
+    //}
+
 
 
 	if (!writeInt16(socket, 0x0ad4, mi_Add, err))
@@ -443,11 +563,12 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 	if (!writeFloat(socket, 0x0a2c, initialLoadValue, err))
 		return false;
 
-
+    qDebug() << "startPoint" << startPoint;
     //写入起始点
 	if (!writeFloat(socket, 0x0A44, startPoint, err))
 		return false;
 
+    qDebug() << "startPoint" << endCondition;
     //写入结束点
 	if (!writeFloat(socket, 0x0A48, endCondition, err))
 		return false;
@@ -490,17 +611,17 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         if (zeroModeList[i] == "torqueZero")
         {
             //第0个bit写入1
-            mi_PC_TEST_2 |= 0x01;
+            mi_PC_TEST_2 |= 0x03;
         }
         else if (zeroModeList[i] == "angleZero")
         {
             //第1个bit写入1
-            mi_PC_TEST_2 |= 0x02;
+            mi_PC_TEST_2 |= 0x04;
         }
         else if (zeroModeList[i] == "angleZeroAndTorqueZero") {
             //第1 2个bit写入1
 
-            mi_PC_TEST_2 |= 0x03;
+            mi_PC_TEST_2 |= 0x07;
         }
     }
 
@@ -542,19 +663,6 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 	//}
 
 
-	//设置测试后的动作
-	int16_t PC_TEST_3 = 0;
-	//第4个bit置为1
-	PC_TEST_3 |= 0x10;
-	if (!writeInt16(socket, 0x0A7C, PC_TEST_3, err)) {
-		err = "writeInt16 error " + socket->socketError();
-		return false;
-	}
-
-    if (mode == "static")
-    {
-       
-    }
 
     QVector< DF_SET>  dfSets;
     // TODO
@@ -576,122 +684,157 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         if (!writeFloat(socket, 0x1108, moveSpeed, err))
             return false;
 
+        //不需要写入0A10
+        if (0) {
+            if (direction == "Forward") {
+                int16_t value = 0;
+                if (!readInt16(socket, 0x0a10, value, err)) {
+                    return false;
+                }
+                //将BIT 0 设置为0
+                value &= ~(1 << 0);
+                //将BIT 9 设置为1
+                value |= (1 << 9);
+                //将BIT 10设置为0
+                value &= ~(1 << 10);
 
-        if (direction == "Forward") {
-            int16_t value=0;
-            if (!readInt16(socket, 0x0a10, value, err)) {
-                return false;
+                if (!writeInt16(socket, 0x0a10, value, err))
+                    return false;
+                if (!readInt16(socket, 0x0a10, value, err)) {
+                    return false;
+                }
+                //回读检查一遍
+                //检查BIT 0是否为0
+                if ((value & (1 << 0)) != 0) {
+                    err = "BIT 0 is not set";
+                    return false;
+                }
+                //检查BIT 9是否为1
+                if ((value & (1 << 9)) == 0) {
+                    err = "BIT 9 is not set";
+                    return false;
+                }
+                //检查BIT 10是否为0
+                if ((value & (1 << 10)) != 0) {
+                    err = "BIT 10 is not set";
+                    return false;
+                }
+
+
+                if (0) {
+                    //写0A16
+                    value = 0;
+                    if (!readInt16(socket, 0x0a16, value, err)) {
+                        return false;
+                    }
+                    //将BIT 1 设置为1
+                    value |= (1 << 1);
+
+                    if (!writeInt16(socket, 0x0a16, value, err))
+                        return false;
+
+                    //检查回读一遍
+                    if (!readInt16(socket, 0x0a16, value, err)) {
+                        return false;
+                    }
+                    //检查BIT 1是否为1
+                    if ((value & (1 << 1)) == 0) {
+                        err = "BIT 1 is not set";
+                        return false;
+                    }
+                }
+
             }
-            //将BIT 0 设置为0
-            value &= ~(1 << 0);
-            //将BIT 9 设置为1
-			value |= (1 << 9);
-            //将BIT 10设置为0
-			value &= ~(1 << 10);
+            else if (direction == "Backward") {
+                int16_t value = 0;
+                if (!readInt16(socket, 0x0a10, value, err)) {
+                    return false;
+                }
 
-            if (!writeInt16(socket, 0x0a10, value, err))
-                return false;
-            if (!readInt16(socket, 0x0a10, value, err)) {
-                return false;
-            }
-            //回读检查一遍
-			//检查BIT 0是否为0
-			if ((value & (1 << 0)) != 0) {
-				err = "BIT 0 is not set";
-				return false;
-			}
-			//检查BIT 9是否为1
-			if ((value & (1 << 9)) == 0) {
-				err = "BIT 9 is not set";
-				return false;
-			}
-			//检查BIT 10是否为0
-			if ((value & (1 << 10)) != 0) {
-				err = "BIT 10 is not set";
-				return false;
-			}
+                //将BIT 0 设置为1
+                value |= (1 << 0);
+                //将BIT 9 设置为1
+                value |= (1 << 9);
+                //将BIT 10设置为1
+                value |= (1 << 10);
 
+                if (!writeInt16(socket, 0x0a10, value, err))
+                    return false;
 
-            //写0A16
-            value = 0;
-            if (!readInt16(socket, 0x0a16, value, err)) {
-                return false;
-            }
-            //将BIT 1 设置为1
-            value |= (1<<1);
+                //回读确认一遍
+                if (!readInt16(socket, 0x0a10, value, err)) {
+                    return false;
+                }
+                //检查BIT 0是否为1
+                if ((value & (1 << 0)) == 0) {
+                    err = "BIT 0 is not set";
+                    return false;
+                }
+                //检查BIT 9是否为1
+                if ((value & (1 << 9)) == 0) {
+                    err = "BIT 9 is not set";
+                    return false;
+                }
+                //检查BIT 10是否为1
+                if ((value & (1 << 10)) == 0) {
+                    err = "BIT 10 is not set";
+                    return false;
+                }
 
-            if (!writeInt16(socket, 0x0a16, value, err))
-                return false;
+                if (0) {
+                    //写0A16
+                    value = 0;
+                    if (!readInt16(socket, 0x0a16, value, err)) {
+                        return false;
+                    }
+                    //将BIT 1 取反
+                    value ^= (1 << 1);
+                    //将BIT 9 取反
+                    value ^= (1 << 9);
+                    ////将BIT 1 设置为0
+                    //value &= ~(1 << 1);
 
-            //检查回读一遍
-            if (!readInt16(socket, 0x0a16, value, err)) {
-                return false;
-            }
-			//检查BIT 1是否为1
-            if ((value & (1 << 1)) == 0) {
-                err = "BIT 1 is not set";
-                return false;
+                    if (!writeInt16(socket, 0x0a16, value, err))
+                        return false;
+
+                    //检查回读一遍
+                    if (!readInt16(socket, 0x0a16, value, err)) {
+                        return false;
+                    }
+                    ////检查BIT 1是否为0
+           //         if ((value & (1 << 1)) != 0) {
+           //             err = "BIT 1 is not set";
+           //             return false;
+           //         }
+                }
+
             }
         }
-        else if (direction == "Backward") {
-            int16_t value = 0;
-            if (!readInt16(socket, 0x0a10, value, err)) {
-                return false;
-            }
+      
 
-            //将BIT 0 设置为1
-			value |= (1 << 0);
+        //写0A16
+        int16_t value = 0;
+        if (!readInt16(socket, 0x0a16, value, err)) {
+            return false;
+        }
+        if (adDirection == "Forward") {
+			//将BIT 1 设置为1
+			value |= (1 << 1);
+		}
+        else  if (adDirection == "Backward") {
+			//将BIT 1 设置为0
+			value &= ~(1 << 1);
+        }
+        if (direction == "Forward") {
             //将BIT 9 设置为1
             value |= (1 << 9);
-            //将BIT 10设置为1
-			value |= (1 << 10);
-
-            if (!writeInt16(socket, 0x0a10, value, err))
-                return false;
-
-            //回读确认一遍
-            if (!readInt16(socket, 0x0a10, value, err)) {
-                return false;
-            }
-            //检查BIT 0是否为1
-			if ((value & (1 << 0)) == 0) {
-				err = "BIT 0 is not set";
-				return false;
-			}
-            //检查BIT 9是否为1
-            if ((value & (1 << 9)) == 0) {
-                err = "BIT 9 is not set";
-                return false;
-            }
-			//检查BIT 10是否为1
-			if ((value & (1 << 10)) == 0) {
-				err = "BIT 10 is not set";
-				return false;
-			}
-
-
-            //写0A16
-            value = 0;
-            if (!readInt16(socket, 0x0a16, value, err)) {
-                return false;
-            }
-            //将BIT 1 设置为0
-            value &= ~(1 << 1);
-
-            if (!writeInt16(socket, 0x0a16, value, err))
-                return false;
-
-            //检查回读一遍
-            if (!readInt16(socket, 0x0a16, value, err)) {
-                return false;
-            }
-			//检查BIT 1是否为0
-            if ((value & (1 << 1)) != 0) {
-                err = "BIT 1 is not set";
-                return false;
-            }
         }
-
+		else if (direction == "Backward") {
+            //将BIT 9 设置为0
+			value &= ~(1 << 9);
+		}
+		if (!writeInt16(socket, 0x0a16, value, err))
+			return false;
     }
     else if (mode == "static") {
 
@@ -707,6 +850,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         //写入移动速度
         if (!writeFloat(socket, 0x1C08, torsionSpeed, err))
             return false;
+        //归零
         {
             DF_SET df_set;
             if (staticMode == "torque")
@@ -787,7 +931,43 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             dfSets.push_back(df_set_delay);
         }
        
+        //归零
+        {
+            DF_SET df_set;
+            if (staticMode == "torque")
+            {
+                df_set.IR_TYPE = 2;
+            }
+            else if (staticMode == "angle")
+            {
+                df_set.IR_TYPE = 1;
+            }
+            df_set.DF_SIGNAL = 4;
+            if (torsionUnit == "degree_per_min")
+            {
+                df_set.DF_SP_UNIT = 2;
+            }
+            else if (torsionUnit == "n_per_min")
+            {
+                df_set.DF_SP_UNIT = 1;
+            }
 
+            df_set.DF_IR = 0;
+            df_set.DF_HZ = torsionSpeed;
+
+
+            //如果是第一个步骤，先位移0mm
+            dfSets.push_back(df_set);
+        }
+
+
+        //加入延迟
+        if (delayTime != 0) {
+            DF_SET df_set_delay;
+            df_set_delay.IR_TYPE = 3;
+            df_set_delay.DF_END_TIME = delayTime;
+            dfSets.push_back(df_set_delay);
+        }
 
 		//第二个步骤
 		DF_SET df_set_second;
@@ -803,6 +983,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         }  
         dfSets.push_back(df_set_second);
 
+        //延时
         if (delayTime != 0) {
             DF_SET df_set_delay;
             df_set_delay.IR_TYPE = 3;
@@ -810,6 +991,43 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             dfSets.push_back(df_set_delay);
         }
 
+        //归零
+        {
+            DF_SET df_set;
+            if (staticMode == "torque")
+            {
+                df_set.IR_TYPE = 2;
+            }
+            else if (staticMode == "angle")
+            {
+                df_set.IR_TYPE = 1;
+            }
+            df_set.DF_SIGNAL = 4;
+            if (torsionUnit == "degree_per_min")
+            {
+                df_set.DF_SP_UNIT = 2;
+            }
+            else if (torsionUnit == "n_per_min")
+            {
+                df_set.DF_SP_UNIT = 1;
+            }
+
+            df_set.DF_IR = 0;
+            df_set.DF_HZ = torsionSpeed;
+
+
+            //如果是第一个步骤，先位移0mm
+            dfSets.push_back(df_set);
+        }
+
+
+        //加入延迟
+        if (delayTime != 0) {
+            DF_SET df_set_delay;
+            df_set_delay.IR_TYPE = 3;
+            df_set_delay.DF_END_TIME = delayTime;
+            dfSets.push_back(df_set_delay);
+        }
 
         DF_SET df_set_loop;
         df_set_loop.IR_TYPE = 4;
@@ -935,6 +1153,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     QJsonObject responseObj;
     responseObj["__channel"] = recvObj["__channel"];
     responseObj["__type"] = recvObj["__type"];
+	responseObj["status"] = "success";
     recvObj = responseObj;
 
 
@@ -1086,6 +1305,94 @@ bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject&
 }
 
 
+bool ControlTestCommHandler::setAD1_DIR(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+    bool onOrOff = obj["on"].toBool();
+
+
+    int16_t value = 0;
+    if (!readInt16(socket, 0x0a16, value, err)) {
+        return false;
+    }
+    //将BIT 0 设置为1
+    int bitNumber = 0;
+    if (onOrOff) {
+        value |= (1 << bitNumber);
+    }
+    else {
+        value &= ~(1 << bitNumber);
+    }
+
+    if (!writeInt16(socket, 0x0a16, value, err))
+        return false;
+
+    return true;
+}
+bool ControlTestCommHandler::setAD2_DIR(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+    bool onOrOff = obj["on"].toBool();
+
+
+    int16_t value = 0;
+    if (!readInt16(socket, 0x0a16, value, err)) {
+        return false;
+    }
+    //将BIT 1 设置为1
+    int bitNumber = 1;
+    if (onOrOff) {
+        value |= (1 << bitNumber);
+    }
+    else {
+        value &= ~(1 << bitNumber);
+    }
+
+    if (!writeInt16(socket, 0x0a16, value, err))
+        return false;
+
+    return true;
+}
+bool ControlTestCommHandler::setAD1_UPDN(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+    bool onOrOff = obj["on"].toBool();
+
+
+    int16_t value = 0;
+    if (!readInt16(socket, 0x0a16, value, err)) {
+        return false;
+    }
+    //将BIT 8 设置为1
+    int bitNumber = 8;
+    if (onOrOff) {
+        value |= (1 << bitNumber);
+    }
+    else {
+        value &= ~(1 << bitNumber);
+    }
+
+    if (!writeInt16(socket, 0x0a16, value, err))
+        return false;
+
+    return true;
+}
+bool ControlTestCommHandler::setAD2_UPDN(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+    bool onOrOff = obj["on"].toBool();
+
+
+    int16_t value = 0;
+    if (!readInt16(socket, 0x0a16, value, err)) {
+        return false;
+    }
+    //将BIT 9 设置为1
+    int bitNumber = 9;
+    if (onOrOff) {
+        value |= (1 << bitNumber);
+    }
+    else {
+        value &= ~(1 << bitNumber);
+    }
+
+    if (!writeInt16(socket, 0x0a16, value, err))
+        return false;
+
+    return true;
+}
 
 //写入X DIR
 bool ControlTestCommHandler::setXDIR(CommunicationThread* socket, QJsonObject& obj, QString& err) {
@@ -1246,6 +1553,7 @@ bool ControlTestCommHandler::home(CommunicationThread* socket, QJsonObject& obj,
 
 
 bool ControlTestCommHandler::stop(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+	qDebug() << "stop";
 	QByteArray buffer;
 	packPC_KEY(0x21, buffer);
 	if (!socket->writeData(buffer)) {
@@ -1261,12 +1569,14 @@ bool ControlTestCommHandler::stop(CommunicationThread* socket, QJsonObject& obj,
 		err = "readData error ,checksum error";
 		return false;
 	}
+    qDebug() << "stop true";
 	return true;
 }
 
 bool ControlTestCommHandler::spin(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 
 	writeInt32(socket, 0X1102, 0, err);
+    if(0)
     {
         QByteArray buffer;
         buffer.fill(0x00, 528);

@@ -291,17 +291,20 @@ double findClosestAngle(
 
 	return closest_angle;
 }
-void DataProcessor::sumupQueue() {
-	QSqlDatabase configDb, testDataDb;
 
-	if (!getConfigDb(configDb))
-		return;
+
+void sumupQueueFunc(
+	const QSqlDatabase &configDb, 
+	const QSqlDatabase& testDataDb,
+	const int queueId_
+) {
+	
 	//读取report_setting
 	QString strSql = QString("select * from report_setting ");
 	QSqlQuery configQuery(configDb);
 	if (!configQuery.exec(strSql)) {
-		qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
-		qDebug() << "deviceId :  " << deviceId_ << "\t" << configDb.lastError().text();
+		qDebug() << "deviceId :  " <<  "\t" << "Failed to fetch data:";
+		qDebug() << "deviceId :  " <<  "\t" << configDb.lastError().text();
 		return;
 	}
 	QVector<QString> reportSetting;
@@ -315,10 +318,10 @@ void DataProcessor::sumupQueue() {
 
 		_TEST_DATA() {
 
-			 torque =0;
-			 angle = 0;;
-			 torque2 = 0;;
-			 angle2 = 0;;
+			torque = 0;
+			angle = 0;;
+			torque2 = 0;;
+			angle2 = 0;;
 		}
 	};
 
@@ -345,7 +348,7 @@ void DataProcessor::sumupQueue() {
 			//剩下的格式是 1-2  提取这两个数字，可能是小数
 			QStringList list = name.split("-");
 			if (list.size() != 2) {
-				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+				qDebug() << "deviceId :  " <<  "\t" << QStringLiteral("stiffness error");
 				continue;
 			}
 
@@ -353,7 +356,7 @@ void DataProcessor::sumupQueue() {
 			double torque = list[0].toDouble(&ok1);
 			int twistCount = list[1].toInt(&ok2);
 			if (!ok1 || !ok2) {
-				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+				qDebug() << "deviceId :  " <<  "\t" << QStringLiteral("stiffness error");
 				continue;
 			}
 			auto it = ReportTorqueToAngle.find(twistCount);
@@ -372,7 +375,7 @@ void DataProcessor::sumupQueue() {
 			//剩下的格式是 1-2  提取这两个数字，可能是小数
 			QStringList list = name.split("-");
 			if (list.size() != 2) {
-				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+				qDebug() << "deviceId :  " <<  "\t" << QStringLiteral("stiffness error");
 				continue;
 			}
 
@@ -380,7 +383,7 @@ void DataProcessor::sumupQueue() {
 			double angle = list[0].toDouble(&ok1);
 			int twistCount = list[1].toInt(&ok2);
 			if (!ok1 || !ok2) {
-				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+				qDebug() << "deviceId :  " <<  "\t" << QStringLiteral("stiffness error");
 				continue;
 			}
 			auto it = ReportAngleToTorque.find(twistCount);
@@ -399,15 +402,15 @@ void DataProcessor::sumupQueue() {
 			//剩下的格式是 1-2  提取这两个数字，可能是小数
 			QStringList list = name.split("-");
 			if (list.size() != 3) {
-				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+				qDebug() << "deviceId :  " <<  "\t" << QStringLiteral("stiffness error");
 				continue;
 			}
-			bool ok1, ok2,ok3;
+			bool ok1, ok2, ok3;
 			double torque = list[0].toDouble(&ok1);
 			double torque2 = list[1].toDouble(&ok2);
 			int twistCount = list[2].toInt(&ok3);
 			if (!ok1 || !ok2 || !ok3) {
-				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+				qDebug() << "deviceId :  " <<  "\t" << QStringLiteral("stiffness error");
 				continue;
 			}
 
@@ -428,16 +431,15 @@ void DataProcessor::sumupQueue() {
 	QString testMode = "";
 	strSql = QString("select method_config.* from method_config join system_config on system_config.current_method = method_config.name");
 	if (!configQuery.exec(strSql)) {
-		qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
-		qDebug() << "deviceId :  " << deviceId_ << "\t" << configDb.lastError().text();
+		qDebug() << "deviceId :  " <<  "\t" << "Failed to fetch data:";
+		qDebug() << "deviceId :  " << "\t" << configDb.lastError().text();
 		return;
 	}
 	if (configQuery.next()) {
 		testMode = configQuery.value("mode").toString();
 	}
 
-	if (!getTestDataDB(testDataDb))
-		return;
+	QVector< TwistingData> vecTwistingData;
 
 	QMap<int, std::vector<TwistingData>> perTwistingData;
 	{
@@ -447,8 +449,8 @@ void DataProcessor::sumupQueue() {
 		strSql = QString("select * from detail where queue_id=%1").arg(queueId_);
 		QSqlQuery testQuery(testDataDb);
 		if (!testQuery.exec(strSql)) {
-			qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
-			qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+			qDebug() << "deviceId :  " <<  "\t" << "Failed to fetch data:";
+			qDebug() << "deviceId :  " <<  "\t" << testDataDb.lastError().text();
 			return;
 		}
 
@@ -484,7 +486,7 @@ void DataProcessor::sumupQueue() {
 					twistingData.twistCount = c1;
 				}
 
-				vecTwistingData_.push_back(twistingData);
+				vecTwistingData.push_back(twistingData);
 				//将不同的twistCount，存入perTwistingData
 				auto it = perTwistingData.find(twistingData.twistCount);
 				if (it == perTwistingData.end()) {
@@ -494,20 +496,20 @@ void DataProcessor::sumupQueue() {
 			}
 
 
-			
+
 		}
 	}
 
 	double lastAngle = 0;
 	double lastTorque = 0;
-	if (vecTwistingData_.size()) {
-		lastAngle = vecTwistingData_.at(0).angle;
-		lastTorque = vecTwistingData_.at(0).torque;
+	if (vecTwistingData.size()) {
+		lastAngle = vecTwistingData.at(0).angle;
+		lastTorque = vecTwistingData.at(0).torque;
 	}
 
 	//数据是类似一个sin波形，根据此属性，找到对应的报告数据
 	//一开始的扭矩和角度都是0
-	for (auto& it : vecTwistingData_) {
+	for (auto& it : vecTwistingData) {
 
 		int twistCount = it.twistCount;
 
@@ -518,10 +520,10 @@ void DataProcessor::sumupQueue() {
 		if (it.angle > angleToTorquePair.first) {
 			angleToTorquePair.first = it.angle;
 			angleToTorquePair.second = it.torque;
-		}	
+		}
 
 		/*
-		
+
 	QMap<int, TEST_DATA_VEC> ReportTorqueToAngle;
 	QMap<int, TEST_DATA_VEC> ReportAngleToTorque;
 	QMap<int, TEST_DATA_VEC> ReportStiffnessAngle;
@@ -533,12 +535,12 @@ void DataProcessor::sumupQueue() {
 	strSql = QString("delete from result where queue_id = %1").arg(queueId_);
 
 	if (!testQuery.exec(strSql)) {
-		qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
-		qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+		qDebug() << "deviceId :  " << "\t" << "Failed to fetch data:";
+		qDebug() << "deviceId :  " << "\t" << testDataDb.lastError().text();
 		return;
 	}
 
-	for (auto it = ReportTorqueToAngle.begin();it != ReportTorqueToAngle.end();it++) {
+	for (auto it = ReportTorqueToAngle.begin(); it != ReportTorqueToAngle.end(); it++) {
 		auto it2 = perTwistingData.find(it.key());
 		if (it2 == perTwistingData.end()) {
 			continue;
@@ -546,15 +548,15 @@ void DataProcessor::sumupQueue() {
 
 		for (auto& testData : it.value()) {
 			// 查找最接近的扭矩对应的角度
-			testData.angle = findClosestAngle(*it2, testData.torque,"rise");
+			testData.angle = findClosestAngle(*it2, testData.torque, "rise");
 
 
 			QString strTmp = QString("torque-%1-%2").arg(testData.torque).arg(it.key());
 			strSql = QString("insert into result(queue_id,name,data) values(%1,'%3',%2)").arg(queueId_).arg(testData.angle).arg(strTmp);
 
 			if (!testQuery.exec(strSql)) {
-				qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
-				qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+				qDebug() << "deviceId :  " <<  "\t" << "Failed to fetch data:";
+				qDebug() << "deviceId :  " << "\t" << testDataDb.lastError().text();
 				return;
 			}
 		}
@@ -570,14 +572,14 @@ void DataProcessor::sumupQueue() {
 			QString strTmp = QString("angle-%1-%2").arg(testData.angle).arg(it.key());
 			strSql = QString("insert into result(queue_id,name,data) values(%1,'%3',%2)").arg(queueId_).arg(testData.torque).arg(strTmp);
 			if (!testQuery.exec(strSql)) {
-				qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
-				qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+				qDebug() << "deviceId :  " << "\t" << "Failed to fetch data:";
+				qDebug() << "deviceId :  " << "\t" << testDataDb.lastError().text();
 				return;
 			}
 		}
 	}
 
-	for (auto it = ReportStiffnessAngle.begin();it != ReportStiffnessAngle.end();it++) {
+	for (auto it = ReportStiffnessAngle.begin(); it != ReportStiffnessAngle.end(); it++) {
 		auto it2 = perTwistingData.find(it.key());
 		if (it2 == perTwistingData.end()) {
 			continue;
@@ -600,43 +602,419 @@ void DataProcessor::sumupQueue() {
 				double res = (testData.torque - testData.torque2) / (testData.angle - testData.angle2);
 				strSql = QString("insert into result(queue_id,name,data) values(%1,'%3',%2)").arg(queueId_).arg(res).arg(strTmp);
 			}
-			
+
+			if (!testQuery.exec(strSql)) {
+				qDebug() << "deviceId :  " <<  "\t" << "Failed to fetch data:";
+				qDebug() << "deviceId :  " <<  "\t" << testDataDb.lastError().text();
+				return;
+			}
+		}
+	}
+
+	for(auto &it: reportSetting)
+	{
+
+		//插入最大扭力
+		strSql = QString("insert into result(queue_id,name,data) values(%1,'maxTorque',%2)").arg(queueId_).arg(torqueToAnglePair.first);
+		if (!testQuery.exec(strSql)) {
+			qDebug() << "deviceId :  " << "\t" << "Failed to fetch data:";
+			qDebug() << "deviceId :  " << "\t" << testDataDb.lastError().text();
+			return;
+		}
+
+		//插入最大角度
+		strSql = QString("insert into result(queue_id,name,data) values(%1,'maxAngle',%2)").arg(queueId_).arg(angleToTorquePair.first);
+		if (!testQuery.exec(strSql)) {
+			qDebug() << "deviceId :  " << "\t" << "Failed to fetch data:";
+			qDebug() << "deviceId :  " << "\t" << testDataDb.lastError().text();
+			return;
+		}
+
+		//插入最大角度对应扭力
+		strSql = QString("insert into result(queue_id,name,data) values(%1,'maxAngleToTorque',%2)").arg(queueId_).arg(angleToTorquePair.second);
+
+		if (!testQuery.exec(strSql)) {
+			qDebug() << "deviceId :  " <<  "\t" << "Failed to fetch data:";
+			qDebug() << "deviceId :  " <<  "\t" << testDataDb.lastError().text();
+			return;
+		}
+
+		//插入最大扭力对应角度
+		strSql = QString("insert into result(queue_id,name,data) values(%1,'maxTorqueToAngle',%2)").arg(queueId_).arg(torqueToAnglePair.second);
+		if (!testQuery.exec(strSql)) {
+			qDebug() << "deviceId :  " <<  "\t" << "Failed to fetch data:";
+			qDebug() << "deviceId :  " <<  "\t" << testDataDb.lastError().text();
+			return;
+		}
+
+		//TODO  后面需要过滤再加上
+		break;
+	}
+}
+
+void DataProcessor::sumupQueue() {
+	QSqlDatabase configDb, testDataDb;
+
+	if (!getConfigDb(configDb))
+		return;
+
+
+	if (!getTestDataDB(testDataDb))
+		return;
+
+	sumupQueueFunc(configDb, testDataDb, queueId_);
+
+	//将当前测试记录设置为测试结束
+	QString strSql = QString("update queue set status = 2 where id = %1").arg(queueId_);
+	QSqlQuery testQuery(testDataDb);
+	if (!testQuery.exec(strSql)) {
+		qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+		qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+		return;
+	}
+
+	return;
+	if (0) {
+		//读取report_setting
+		QString strSql = QString("select * from report_setting ");
+		QSqlQuery configQuery(configDb);
+		if (!configQuery.exec(strSql)) {
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << configDb.lastError().text();
+			return;
+		}
+		QVector<QString> reportSetting;
+
+		struct _TEST_DATA {
+			double torque;
+			double angle;
+			double torque2;
+			double angle2;
+
+
+			_TEST_DATA() {
+
+				torque = 0;
+				angle = 0;;
+				torque2 = 0;;
+				angle2 = 0;;
+			}
+		};
+
+
+		std::pair<double, double> torqueToAnglePair;//最大扭矩对应的角度
+		std::pair<double, double> angleToTorquePair;//最大角度对应的扭矩
+		torqueToAnglePair.first = 0;
+		torqueToAnglePair.second = 0;
+		angleToTorquePair.first = 0;
+		angleToTorquePair.second = 0;
+
+		typedef std::vector< _TEST_DATA> TEST_DATA_VEC;
+		QMap<int, TEST_DATA_VEC> ReportTorqueToAngle;//int是循环次数  第二个元素是记录所有需要找的扭矩对应的角度
+		QMap<int, TEST_DATA_VEC> ReportAngleToTorque;//int是循环次数  第二个元素是记录所有需要找的角度对应的扭矩
+		QMap<int, TEST_DATA_VEC> ReportStiffnessAngle;//int是循环次数  第二个元素是记录所有需要找的扭转刚度
+		while (configQuery.next())
+		{
+			QString name = configQuery.value("name").toString();
+			//如果前面字符串是"torque"
+			if (name.startsWith("torque-")) {
+				//去掉前面字符串
+				name = name.remove(0, 7);
+
+				//剩下的格式是 1-2  提取这两个数字，可能是小数
+				QStringList list = name.split("-");
+				if (list.size() != 2) {
+					qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+					continue;
+				}
+
+				bool ok1, ok2;
+				double torque = list[0].toDouble(&ok1);
+				int twistCount = list[1].toInt(&ok2);
+				if (!ok1 || !ok2) {
+					qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+					continue;
+				}
+				auto it = ReportTorqueToAngle.find(twistCount);
+
+				if (it == ReportTorqueToAngle.end()) {
+					ReportTorqueToAngle[twistCount] = std::vector< _TEST_DATA>();
+				}
+				_TEST_DATA testData;
+				testData.torque = torque;
+				ReportTorqueToAngle[twistCount].push_back(testData);
+			}
+			//如果前面字符串是"angle"
+			else if (name.startsWith("angle-")) {
+				//去掉前面字符串
+				name = name.remove(0, 6);
+				//剩下的格式是 1-2  提取这两个数字，可能是小数
+				QStringList list = name.split("-");
+				if (list.size() != 2) {
+					qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+					continue;
+				}
+
+				bool ok1, ok2;
+				double angle = list[0].toDouble(&ok1);
+				int twistCount = list[1].toInt(&ok2);
+				if (!ok1 || !ok2) {
+					qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+					continue;
+				}
+				auto it = ReportAngleToTorque.find(twistCount);
+
+				if (it == ReportAngleToTorque.end()) {
+					ReportAngleToTorque[twistCount] = std::vector< _TEST_DATA>();
+				}
+				_TEST_DATA testData;
+				testData.angle = angle;
+				ReportAngleToTorque[twistCount].push_back(testData);
+			}
+			//如果前面字符串是"stiffness"
+			else if (name.startsWith("stiffness-")) {
+				//去掉前面字符串
+				name = name.remove(0, 10);
+				//剩下的格式是 1-2  提取这两个数字，可能是小数
+				QStringList list = name.split("-");
+				if (list.size() != 3) {
+					qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+					continue;
+				}
+				bool ok1, ok2, ok3;
+				double torque = list[0].toDouble(&ok1);
+				double torque2 = list[1].toDouble(&ok2);
+				int twistCount = list[2].toInt(&ok3);
+				if (!ok1 || !ok2 || !ok3) {
+					qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
+					continue;
+				}
+
+				auto it = ReportStiffnessAngle.find(twistCount);
+
+				if (it == ReportStiffnessAngle.end()) {
+					ReportStiffnessAngle[twistCount] = std::vector< _TEST_DATA>();
+				}
+				_TEST_DATA testData;
+				testData.torque = torque;
+				testData.torque2 = torque2;
+				ReportStiffnessAngle[twistCount].push_back(testData);
+			}
+
+			reportSetting.push_back(configQuery.value("name").toString());
+		}
+
+		QString testMode = "";
+		strSql = QString("select method_config.* from method_config join system_config on system_config.current_method = method_config.name");
+		if (!configQuery.exec(strSql)) {
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << configDb.lastError().text();
+			return;
+		}
+		if (configQuery.next()) {
+			testMode = configQuery.value("mode").toString();
+		}
+
+		QMap<int, std::vector<TwistingData>> perTwistingData;
+		{
+#ifdef _DEBUG
+			//queueId_ = 67;
+#endif
+			strSql = QString("select * from detail where queue_id=%1").arg(queueId_);
+			QSqlQuery testQuery(testDataDb);
+			if (!testQuery.exec(strSql)) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+				return;
+			}
+
+			if (testQuery.next()) {
+				QByteArray data = testQuery.value("data").toByteArray();
+				QDataStream stream(&data, QIODevice::ReadWrite);
+				int total = testQuery.value("totalNumber").toInt();
+				//int queueId = testQuery.value("id").toInt();
+				//qDebug() << "deviceId :  " << deviceId_ << "\t" << "totalNumber:" << total;
+				//qDebug() << "deviceId :  " << deviceId_ << "\t" << "queueId:" << queueId;
+				//qDebug() << "deviceId :  " << deviceId_ << "\t" << "data:" << data.size();
+				//qDebug() << "deviceId :  " << deviceId_ << "\t" << "data:" << data.toHex();
+
+				for (size_t i = 0; i < total; i++) {
+					ExamplePoint point;
+					float AD1, AD2, YZ_MM, time;
+					int c1, c2;
+					stream >> AD1 >> AD2 >> YZ_MM >> time >> c1 >> c2;
+					point.AD1 = AD1;
+					point.AD2 = AD2;
+					point.YZ_mm = YZ_MM;
+					point.time = time;
+
+					TwistingData twistingData;
+					twistingData.torque = AD2;
+					twistingData.angle = YZ_MM;
+					twistingData.testTimer = time;
+
+					if (testMode == "dynamic") {
+						twistingData.twistCount = c2;
+					}
+					else {
+						twistingData.twistCount = c1;
+					}
+
+					vecTwistingData_.push_back(twistingData);
+					//将不同的twistCount，存入perTwistingData
+					auto it = perTwistingData.find(twistingData.twistCount);
+					if (it == perTwistingData.end()) {
+						perTwistingData[twistingData.twistCount] = std::vector<TwistingData>();
+					}
+					perTwistingData[twistingData.twistCount].push_back(twistingData);
+				}
+
+
+
+			}
+		}
+
+		double lastAngle = 0;
+		double lastTorque = 0;
+		if (vecTwistingData_.size()) {
+			lastAngle = vecTwistingData_.at(0).angle;
+			lastTorque = vecTwistingData_.at(0).torque;
+		}
+
+		//数据是类似一个sin波形，根据此属性，找到对应的报告数据
+		//一开始的扭矩和角度都是0
+		for (auto& it : vecTwistingData_) {
+
+			int twistCount = it.twistCount;
+
+			if (it.torque > torqueToAnglePair.first) {
+				torqueToAnglePair.first = it.torque;
+				torqueToAnglePair.second = it.angle;
+			}
+			if (it.angle > angleToTorquePair.first) {
+				angleToTorquePair.first = it.angle;
+				angleToTorquePair.second = it.torque;
+			}
+
+			/*
+
+		QMap<int, TEST_DATA_VEC> ReportTorqueToAngle;
+		QMap<int, TEST_DATA_VEC> ReportAngleToTorque;
+		QMap<int, TEST_DATA_VEC> ReportStiffnessAngle;
+			*/
+
+		}
+
+		QSqlQuery testQuery(testDataDb);
+		strSql = QString("delete from result where queue_id = %1").arg(queueId_);
+
+		if (!testQuery.exec(strSql)) {
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+			qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+			return;
+		}
+
+		for (auto it = ReportTorqueToAngle.begin(); it != ReportTorqueToAngle.end(); it++) {
+			auto it2 = perTwistingData.find(it.key());
+			if (it2 == perTwistingData.end()) {
+				continue;
+			}
+
+			for (auto& testData : it.value()) {
+				// 查找最接近的扭矩对应的角度
+				testData.angle = findClosestAngle(*it2, testData.torque, "rise");
+
+
+				QString strTmp = QString("torque-%1-%2").arg(testData.torque).arg(it.key());
+				strSql = QString("insert into result(queue_id,name,data) values(%1,'%3',%2)").arg(queueId_).arg(testData.angle).arg(strTmp);
+
+				if (!testQuery.exec(strSql)) {
+					qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+					qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+					return;
+				}
+			}
+		}
+		for (auto it = ReportAngleToTorque.begin(); it != ReportAngleToTorque.end(); it++) {
+			auto it2 = perTwistingData.find(it.key());
+			if (it2 == perTwistingData.end()) {
+				continue;
+			}
+			for (auto& testData : it.value()) {
+				// 查找最接近的角度对应的扭矩
+				testData.torque = findClosestTorque(*it2, testData.angle, "rise");
+				QString strTmp = QString("angle-%1-%2").arg(testData.angle).arg(it.key());
+				strSql = QString("insert into result(queue_id,name,data) values(%1,'%3',%2)").arg(queueId_).arg(testData.torque).arg(strTmp);
+				if (!testQuery.exec(strSql)) {
+					qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+					qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+					return;
+				}
+			}
+		}
+
+		for (auto it = ReportStiffnessAngle.begin(); it != ReportStiffnessAngle.end(); it++) {
+			auto it2 = perTwistingData.find(it.key());
+			if (it2 == perTwistingData.end()) {
+				continue;
+			}
+			for (auto& testData : it.value()) {
+				std::string phase = "rise";
+				if (testData.torque > testData.torque2) {
+					phase = "fall";
+				}
+
+				// 查找最接近的扭矩对应的角度
+				testData.angle = findClosestAngle(*it2, testData.torque, phase.c_str());
+				testData.angle2 = findClosestAngle(*it2, testData.torque2, phase.c_str());
+				QString strTmp = QString("stiffness-%1-%2-%3").arg(testData.torque).arg(testData.torque2).arg(it.key());
+				if (testData.angle - testData.angle2 == 0) {
+					//除0异常
+					strSql = QString("insert into result(queue_id,name,data) values(%1,'%3','%2')").arg(queueId_).arg("not found").arg(strTmp);
+				}
+				else {
+					double res = (testData.torque - testData.torque2) / (testData.angle - testData.angle2);
+					strSql = QString("insert into result(queue_id,name,data) values(%1,'%3',%2)").arg(queueId_).arg(res).arg(strTmp);
+				}
+
+				if (!testQuery.exec(strSql)) {
+					qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+					qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+					return;
+				}
+			}
+		}
+
+
+		{
+			//插入角度最大值
+			strSql = QString("insert into result(queue_id,name,data) values(%1,'maxAngleToTorque',%2)").arg(queueId_).arg(angleToTorquePair.second);
+
+			if (!testQuery.exec(strSql)) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
+				return;
+			}
+
+			//插入扭矩最大值
+			strSql = QString("insert into result(queue_id,name,data) values(%1,'maxTorqueToAngle',%2)").arg(queueId_).arg(torqueToAnglePair.second);
 			if (!testQuery.exec(strSql)) {
 				qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
 				qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
 				return;
 			}
 		}
-	}
 
 
-	{
-		//插入角度最大值
-		strSql = QString("insert into result(queue_id,name,data) values(%1,'maxAngleToTorque',%2)").arg(queueId_).arg(torqueToAnglePair.second);
-
-		if (!testQuery.exec(strSql)) {
-			qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
-			qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
-			return;
-		}
-
-		//插入扭矩最大值
-		strSql = QString("insert into result(queue_id,name,data) values(%1,'maxTorqueToAngle',%2)").arg(queueId_).arg(angleToTorquePair.second);
+		//将当前测试记录设置为测试结束
+		strSql = QString("update queue set status = 2 where id = %1").arg(queueId_);
 		if (!testQuery.exec(strSql)) {
 			qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to fetch data:";
 			qDebug() << "deviceId :  " << deviceId_ << "\t" << testDataDb.lastError().text();
 			return;
 		}
 	}
-
 	
-	//将当前测试记录设置为测试结束
-	strSql = QString("update queue set status = 2 where id = %1").arg(queueId_);
-	if (!testQuery.exec(strSql)) {
-		qDebug() <<"deviceId :  "<<deviceId_ << "\t" << "Failed to fetch data:";
-		qDebug() <<"deviceId :  "<<deviceId_ << "\t" << testDataDb.lastError().text();
-		return;
-	}
 }
 
 
@@ -864,19 +1242,7 @@ void DataProcessor::recordDetail(const U65RawData& info) {
 
 
 extern int SAMPLE_RATE;
-void DataProcessor::record(const U65RawData& info) {
-
-	int availableDataCount = cur_REAL_MSG_CT_ - last_REAL_MSG_CT_;
-	if (availableDataCount <= 0) {
-		return;
-	}
-
-	int maxValidData = 12;
-
-	// 如果新增的数据条数大于缓存上限，跳过过期的数据，只保留最后12条
-	int startIdx = (availableDataCount > maxValidData)
-		? cur_REAL_MSG_CT_ - maxValidData
-		: last_REAL_MSG_CT_;
+void DataProcessor::record(const U65RawData& info, bool forceInput) {
 
 	// 采样率设置
 	float sample_freq = 1.0f;
@@ -890,31 +1256,51 @@ void DataProcessor::record(const U65RawData& info) {
 	default: sample_freq = 1.0f; break;
 	}
 
-	for (int i = 0; i < (availableDataCount > maxValidData ? maxValidData : availableDataCount); i++) {
-		int realIndex = (startIdx + i) % maxValidData; // 缓存是12大小
+	int availableDataCount = cur_REAL_MSG_CT_ - last_REAL_MSG_CT_;
+	if (availableDataCount > 0) {
+		int maxValidData = 12;
 
-		float YZ_MM = info.U65Info.YZ_MM[realIndex];
-		float AD1 = info.U65Info.AD1[realIndex];
-		float AD2 = info.U65Info.AD2[realIndex];
-		//AD2 /= 1000;
+		// 如果新增的数据条数大于缓存上限，跳过过期的数据，只保留最后12条
+		int startIdx = (availableDataCount > maxValidData)
+			? cur_REAL_MSG_CT_ - maxValidData
+			: last_REAL_MSG_CT_;
 
-		// 生成结构体
-		TwistingData twistingData;
-		twistingData.angle = AD2;
-		twistingData.torque = YZ_MM;
-		twistingData.axialDisplacement = AD1;
-		twistingData.realTime = (cur_REAL_MSG_CT_ + i) / sample_freq;
-		twistingData.twistCount = info.U65Info.twistingCount;
-		twistingData.twistCountSin = info.U65Info.twistingCountSin;
-		vecTwistingData_.push_back(twistingData);
+		
+
+		for (int i = 0; i < (availableDataCount > maxValidData ? maxValidData : availableDataCount); i++) {
+			int realIndex = (startIdx + i) % maxValidData; // 缓存是12大小
+
+			float YZ_MM = info.U65Info.YZ_MM[realIndex];
+			float AD1 = info.U65Info.AD1[realIndex];
+			float AD2 = info.U65Info.AD2[realIndex];
+			//AD2 /= 1000;
+
+			// 生成结构体
+			TwistingData twistingData;
+			twistingData.angle = YZ_MM;
+			twistingData.torque = AD2;
+			twistingData.axialDisplacement = AD1;
+			twistingData.realTime = (cur_REAL_MSG_CT_ + i) / sample_freq;
+			twistingData.twistCount = info.U65Info.twistingCount;
+			twistingData.twistCountSin = info.U65Info.twistingCountSin;
+			vecTwistingData_.push_back(twistingData);
 
 
-		//				stream << AD1 << AD2 << YZ_MM << time << info.U65Info.twistingCount << info.U65Info.twistingCountSin;
+			//				stream << AD1 << AD2 << YZ_MM << time << info.U65Info.twistingCount << info.U65Info.twistingCountSin;
+		}
 	}
 
-	if (vecTwistingData_.size() - recordCount_ < sample_freq) {
+	if (vecTwistingData_.size() == recordCount_)
 		return;
+	
+
+	qDebug() << "vecTwistingData_" << vecTwistingData_.size() << "forceInput"<< forceInput << "   recordCount_" << recordCount_ << " sample_freq "<< sample_freq;
+	if (!forceInput) {
+		if (vecTwistingData_.size() - recordCount_ < sample_freq) {
+			return;
+		}
 	}
+	qDebug() << "recordCount_" << recordCount_;
 
 	//寫入數據庫
 	QSqlDatabase testDataDb;
@@ -958,9 +1344,9 @@ void DataProcessor::record(const U65RawData& info) {
 
 	for (size_t i = recordCount_;i < vecTwistingData_.size();i++) {
 
-		float YZ_MM = vecTwistingData_.at(i).torque;
+		float YZ_MM = vecTwistingData_.at(i).angle;
 		float AD1 = vecTwistingData_.at(i).axialDisplacement;
-		float AD2 = vecTwistingData_.at(i).angle;
+		float AD2 = vecTwistingData_.at(i).torque;
 		float time = vecTwistingData_.at(i).realTime;
 		//AD2 /= 1000;
 		int twistingCount = vecTwistingData_.at(i).twistCount;;
@@ -998,14 +1384,20 @@ void  DataProcessor::handleRegularInfoFunc(const U65RawData& info) {
 			return;
 		
 		if (cur_REAL_MSG_CT_ != 0) {
-			record(info);
+			bool forceInput = false;
+			if (!curTesting_)
+				forceInput = true;
+			record(info, forceInput);
 		}
 
-
-		if (!curTesting_) {
-			qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("结束测试重新获取队列");
-			return endTestQueue(info);
+		if (last_REAL_MSG_CT_ == cur_REAL_MSG_CT_) {
+			if (!curTesting_) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("结束测试重新获取队列");
+				return endTestQueue(info);
+			}
 		}
+
+		
 			
 	}
 	else if (curTesting_) {
@@ -1132,6 +1524,7 @@ void DataProcessor::handleRegularInfo(const QVariant& data) {
 	curTesting_ = info.isTesting();
 
 	
+	
 
 	cur_REAL_MSG_CT_ = info.U65Info.REAL_MSG_CT;
 
@@ -1164,18 +1557,18 @@ void DataProcessor::handleRegularInfo(const QVariant& data) {
 	}
 
 
-	/*qDebug() << "catch cur_REAL_MSG_CT_" << cur_REAL_MSG_CT_;*/
+	//qDebug() << "catch cur_REAL_MSG_CT_" << cur_REAL_MSG_CT_;
 
 	//recordDetail(info);
 
 
-	qDebug()<<"catch" << info.U65Info.REAL_MSG_CT;
+	//qDebug()<<"catch" << info.U65Info.REAL_MSG_CT;
 
 	//处理数据
 	QElapsedTimer timer;
 	timer.start();
 	handleRegularInfoFunc(info);
-	qDebug() << "start timerrr: " << timer.elapsed();
+	//qDebug() << "start timerrr: " << timer.elapsed();
 
 
 	//float AD1[12];//轴向位移
@@ -1191,6 +1584,16 @@ void DataProcessor::handleRegularInfo(const QVariant& data) {
 	lastDoorStatus_ = curDoorStatus_;
 	lastMoldStatus_ = curMoldStatus_;
 	lastTesting_ = curTesting_;
+
+	if (last_REAL_MSG_CT_ != cur_REAL_MSG_CT_) {
+		if (!curTesting_) {
+			//还有东西没采集完
+			lastTesting_ = true;
+			qDebug() << "lastTesting_ case";
+		}
+		
+	}
+
 	last_REAL_MSG_CT_ = cur_REAL_MSG_CT_;
 }
 

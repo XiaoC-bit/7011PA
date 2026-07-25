@@ -47,6 +47,13 @@ private:
 
 	//写入采样率
 	bool setSamplingRate(CommunicationThread* socket, QJsonObject& obj, QString& err);
+
+	//写入DIR_FLAG
+	bool setAD1_DIR(CommunicationThread* socket, QJsonObject& obj, QString& err);
+	bool setAD2_DIR(CommunicationThread* socket, QJsonObject& obj, QString& err);
+	bool setAD1_UPDN(CommunicationThread* socket, QJsonObject& obj, QString& err);
+	bool setAD2_UPDN(CommunicationThread* socket, QJsonObject& obj, QString& err);
+	
 private:
 
 	//单个写入DF SET
