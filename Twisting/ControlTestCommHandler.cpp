@@ -1715,9 +1715,10 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 	double threshold = obj.contains("threshold") ? obj["threshold"].toDouble() : 0.00005;
 	const int maxIterations = 5000; //安全上限，防止异常时死循环
 
-    //写入移动速度
-    if (!writeFloat(socket, 0x1108, 10, err))
-        return false;
+	//移动速度自适应：远离设定角度时用高速(500)，接近时线性降到 minSpeed
+	const double maxSpeed = 500.0;
+	const double minSpeed = 10.0;
+	double firstAbsDiff = -1.0; //首次回读的|diff|，作为满速基准
 
 	for (int i = 0; i < maxIterations; i++) {
 		//读取当前角度：4字节，地址 0x0934（0x0900 + 0x34），按 float 解析
@@ -1729,9 +1730,25 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 		qDebug() << "prepareTest current:" << currentAngle << "target:" << targetAngle;
 
 		double diff = currentAngle - targetAngle;
-		if (qAbs(diff) <= threshold) {
+		double absDiff = qAbs(diff);
+		if (absDiff <= threshold) {
 			return true; //达到阈值，停止
 		}
+
+		//首次记录基准|diff|，用于按比例计算速度
+		if (firstAbsDiff < 0) {
+			firstAbsDiff = absDiff;
+		}
+		//速度随接近程度线性减小：远离时 maxSpeed，接近时降到 minSpeed
+		double ratio = firstAbsDiff > 0 ? (absDiff / firstAbsDiff) : 1.0;
+		double speed = minSpeed + (maxSpeed - minSpeed) * ratio;
+		if (speed > maxSpeed) speed = maxSpeed;
+		if (speed < minSpeed) speed = minSpeed;
+		qDebug() << "prepareTest absDiff:" << absDiff << "speed:" << speed;
+
+		//写入移动速度
+		if (!writeFloat(socket, 0x1108, static_cast<float>(speed), err))
+			return false;
 
 		//当前角度比设定角度小 -> moveup(spin)；否则 -> movedown(reSpin)
 		QJsonObject dummy;
