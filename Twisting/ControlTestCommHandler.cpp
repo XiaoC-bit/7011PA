@@ -32,6 +32,12 @@ bool ControlTestCommHandler::commFunc(CommunicationThread* socket, QJsonObject& 
 	else if (type == "prepare-test") {
 		return prepareTest(socket, obj, err);
 	}
+	else if (type == "grip") {
+		return grip(socket, obj, err);
+	}
+	else if (type == "release") {
+		return release(socket, obj, err);
+	}
     else if (type == "end-test") {
 		return stopTest(socket, obj, err);
     }
@@ -1719,12 +1725,13 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 	const double maxSpeed = 500.0;
 	const double minSpeed = 10.0;
 	double firstAbsDiff = -1.0; //首次回读的|diff|，作为满速基准
+	bool converged = false; //是否已达到阈值
 
 	for (int i = 0; i < maxIterations; i++) {
 		//读取当前角度：4字节，地址 0x0934（0x0900 + 0x34），按 float 解析
 		int32_t Hex32 = 0;
 		if (!readInt32(socket, 0x0934, Hex32, err)) {
-			return false;
+			break;
 		}
 		float currentAngle = *reinterpret_cast<float*>(&Hex32);
 		qDebug() << "prepareTest current:" << currentAngle << "target:" << targetAngle;
@@ -1732,7 +1739,8 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 		double diff = currentAngle - targetAngle;
 		double absDiff = qAbs(diff);
 		if (absDiff <= threshold) {
-			return true; //达到阈值，停止
+			converged = true; //达到阈值，停止
+			break;
 		}
 
 		//首次记录基准|diff|，用于按比例计算速度
@@ -1747,8 +1755,9 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 		qDebug() << "prepareTest absDiff:" << absDiff << "speed:" << speed;
 
 		//写入移动速度
-		if (!writeFloat(socket, 0x1108, static_cast<float>(speed), err))
-			return false;
+		if (!writeFloat(socket, 0x1108, static_cast<float>(speed), err)) {
+			break;
+		}
 
 		//当前角度比设定角度小 -> moveup(spin)；否则 -> movedown(reSpin)
 		QJsonObject dummy;
@@ -1760,12 +1769,61 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 			moveOk = reSpin(socket, dummy, err);
 		}
 		if (!moveOk) {
-			return false;
+			break;
 		}
 
 		QThread::msleep(100); //等待电机移动一小段后再回读
 	}
 
-	err = "prepareTest exceeded max iterations";
-	return false;
+	if (!converged && err.isEmpty()) {
+		err = "prepareTest exceeded max iterations";
+	}
+
+	//接口结束后恢复移动速度到500（失败不覆盖已有错误）
+	QString restoreErr;
+	if (!writeFloat(socket, 0x1108, 500.0f, restoreErr) && err.isEmpty()) {
+		err = restoreErr;
+	}
+
+	return converged;
+}
+
+//夹持
+bool ControlTestCommHandler::grip(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+	QByteArray buffer;
+	packPC_KEY(0x107, 0x01, buffer);
+	if (!socket->writeData(buffer)) {
+		err = "writeData error " + socket->socketError();
+		return false;
+	}
+	QByteArray recvData;
+	if (!socket->readData(recvData)) {
+		err = "readData error " + socket->socketError();
+		return false;
+	}
+	if (!checkSum(recvData)) {
+		err = "readData error ,checksum error";
+		return false;
+	}
+	return true;
+}
+
+//松开
+bool ControlTestCommHandler::release(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+	QByteArray buffer;
+	packPC_KEY(0x107, 0x00, buffer);
+	if (!socket->writeData(buffer)) {
+		err = "writeData error " + socket->socketError();
+		return false;
+	}
+	QByteArray recvData;
+	if (!socket->readData(recvData)) {
+		err = "readData error " + socket->socketError();
+		return false;
+	}
+	if (!checkSum(recvData)) {
+		err = "readData error ,checksum error";
+		return false;
+	}
+	return true;
 }
