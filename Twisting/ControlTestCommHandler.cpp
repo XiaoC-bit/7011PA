@@ -1722,7 +1722,7 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 	const int maxIterations = 5000; //安全上限，防止异常时死循环
 
 	//移动速度自适应：远离设定角度时用高速(500)，接近时线性降到 minSpeed
-	const double maxSpeed = 500.0;
+	const double maxSpeed = 400.0;
 	const double minSpeed = 10.0;
 	double firstAbsDiff = -1.0; //首次回读的|diff|，作为满速基准
 	bool converged = false; //是否已达到阈值
@@ -1772,12 +1772,15 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 			break;
 		}
 
-		QThread::msleep(100); //等待电机移动一小段后再回读
+		QThread::msleep(500); //等待电机移动一小段后再回读
 	}
 
 	if (!converged && err.isEmpty()) {
 		err = "prepareTest exceeded max iterations";
 	}
+
+    QJsonObject dummy;
+	stop(socket, dummy, err); //停止移动，避免继续移动
 
 	//接口结束后恢复移动速度到500（失败不覆盖已有错误）
 	QString restoreErr;
