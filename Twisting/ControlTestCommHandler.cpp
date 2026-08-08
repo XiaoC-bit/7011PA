@@ -19,10 +19,10 @@ bool ControlTestCommHandler::commFunc(CommunicationThread* socket, QJsonObject& 
 	else if (type == "stop") {
 		return stop(socket, obj, err);
 	}
-	else if (type == "spin") {
+	else if (type == "move-up") {
 		return spin(socket, obj, err);
 	}
-	else if (type == "re-spin") {
+	else if (type == "move-down") {
 		return reSpin(socket, obj, err);
 	}
 	else if (type == "start-test") {
@@ -1575,7 +1575,7 @@ bool ControlTestCommHandler::stop(CommunicationThread* socket, QJsonObject& obj,
 
 bool ControlTestCommHandler::spin(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 
-	writeInt32(socket, 0X1102, 0, err);
+	//writeInt32(socket, 0X1102, 0, err);
     if(0)
     {
         QByteArray buffer;
@@ -1620,6 +1620,7 @@ bool ControlTestCommHandler::spin(CommunicationThread* socket, QJsonObject& obj,
 //        return true;
     }
 
+    if(0)
     {
         QByteArray buffer;
         buffer.fill(0x00, 528);

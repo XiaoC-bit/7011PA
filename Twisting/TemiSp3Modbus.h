@@ -8,6 +8,7 @@
 #include <QModbusReply>
 #include <QSerialPort>
 #include <QTimer>
+#include <QEventLoop>
 #include <QDebug>
 
 // TEMI SP3 位移/测长传感器 Modbus RTU 通讯封装
@@ -131,9 +132,115 @@ public:
         }
     }
 
+    // 启动测试：功能码06，地址3，写入值1
+    void startTest(int slaveAddr)
+    {
+        QModbusDataUnit writeUnit(QModbusDataUnit::HoldingRegisters, /*startAddr=*/3, /*count=*/1);
+        writeUnit.setValue(0, 1);
+
+        if (auto* reply = m_modbus->sendWriteRequest(writeUnit, slaveAddr)) {
+            if (!reply->isFinished()) {
+                connect(reply, &QModbusReply::finished, this, [this, reply]() {
+                    if (reply->error() == QModbusDevice::NoError) {
+                        emit startTestDone(true);
+                    }
+                    else {
+                        qWarning() << "启动测试失败:" << reply->errorString();
+                        emit startTestDone(false);
+                        emit errorHappened(reply->errorString());
+                    }
+                    reply->deleteLater();
+                    });
+            }
+            else {
+                reply->deleteLater();
+            }
+        }
+        else {
+            qWarning() << "发送写请求失败:" << m_modbus->errorString();
+            emit startTestDone(false);
+            emit errorHappened(m_modbus->errorString());
+        }
+    }
+
+    // ===== 同步（阻塞）版本 =====
+    // 使用 QEventLoop 阻塞等待回复完成，嵌套事件循环会继续处理串口 I/O。
+    // 注意：在主线程调用会阻塞 UI，适合在启动阶段或后台线程使用。
+
+    // 启动测试（同步），返回是否成功
+    bool startTestSync(int slaveAddr)
+    {
+        QModbusDataUnit writeUnit(QModbusDataUnit::HoldingRegisters, /*startAddr=*/3, /*count=*/1);
+        writeUnit.setValue(0, 1);
+
+        bool ok = false;
+        QEventLoop loop;
+        if (auto* reply = m_modbus->sendWriteRequest(writeUnit, slaveAddr)) {
+            if (!reply->isFinished()) {
+                connect(reply, &QModbusReply::finished, this, [this, reply, &ok, &loop]() {
+                    ok = (reply->error() == QModbusDevice::NoError);
+                    if (!ok) {
+                        qWarning() << "启动测试失败:" << reply->errorString();
+                        emit errorHappened(reply->errorString());
+                    }
+                    reply->deleteLater();
+                    loop.quit();
+                    });
+                loop.exec();
+            }
+            else {
+                reply->deleteLater();
+            }
+        }
+        else {
+            qWarning() << "发送写请求失败:" << m_modbus->errorString();
+            emit errorHappened(m_modbus->errorString());
+        }
+        return ok;
+    }
+
+    // 读速度（同步），ok 指针用于接收是否成功
+    double readSpeedSync(int slaveAddr, bool* ok = nullptr)
+    {
+        QModbusDataUnit readUnit(QModbusDataUnit::HoldingRegisters, /*startAddr=*/1, /*count=*/1);
+
+        double speed = 0.0;
+        bool success = false;
+        QEventLoop loop;
+        if (auto* reply = m_modbus->sendReadRequest(readUnit, slaveAddr)) {
+            if (!reply->isFinished()) {
+                connect(reply, &QModbusReply::finished, this, [this, reply, &speed, &success, &loop]() {
+                    if (reply->error() == QModbusDevice::NoError) {
+                        const QModbusDataUnit unit = reply->result();
+                        quint16 raw = unit.value(0);
+                        speed = raw / 100.0;
+                        success = true;
+                    }
+                    else {
+                        qWarning() << "读速度失败:" << reply->errorString();
+                        emit errorHappened(reply->errorString());
+                    }
+                    reply->deleteLater();
+                    loop.quit();
+                    });
+                loop.exec();
+            }
+            else {
+                reply->deleteLater();
+            }
+        }
+        else {
+            qWarning() << "发送读请求失败:" << m_modbus->errorString();
+            emit errorHappened(m_modbus->errorString());
+        }
+        if (ok) *ok = success;
+        return speed;
+    }
+
 signals:
     void speedRead(double speedMps);
     void lengthSetDone(bool ok);
+    void startTestDone(bool ok);
     void errorHappened(const QString& msg);
 
 private:

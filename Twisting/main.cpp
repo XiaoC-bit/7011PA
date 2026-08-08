@@ -17,6 +17,7 @@
 
 #include "dumpfile.h"
 #include "DataDefine.h"
+#include "TemiSp3Modbus.h"
 
 
 bool terminateProcessByName(const std::string& processName) {
@@ -181,6 +182,28 @@ int main(int argc, char *argv[])
 
     QApplication a(argc, argv);
 	qInstallMessageHandler(logMessage);
+
+	/*TemiSp3Modbus modbus;
+	if (!modbus.open("COM4", 19200)) {
+		qDebug() << "串口打开失败";
+
+	}
+	else {
+		qDebug() << "串口打开成功";
+	}
+	if (modbus.startTestSync(1)) {
+		qDebug() << "启动测试成功";
+		bool ok = false;
+		double speed = modbus.readSpeedSync(1, &ok);
+		if (ok)
+			qDebug() << "速度:" << speed << "m/s";
+		else
+			qDebug() << "读速度失败";
+	}
+	else {
+		qDebug() << "启动测试失败，跳过读速度";
+	}*/
+
 
 
 	QDir dir = QCoreApplication::applicationDirPath();

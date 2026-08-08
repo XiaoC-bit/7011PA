@@ -53,10 +53,10 @@ void CommunicationThread::run()
 	if (m_socket->state() != QAbstractSocket::ConnectedState) {
 		m_socket->setProxy(QNetworkProxy::NoProxy);//对于开了VPN的机器，需要设置此项
 #ifdef _DEBUG
-	/*	m_socket->connectToHost(m_deviceAddress, m_port);
+		m_socket->connectToHost(m_deviceAddress, m_port);
 		if (!m_socket->waitForConnected()) {
 			qDebug() << m_socket->errorString();
-		}*/
+		}
 #else
 		m_socket->connectToHost(m_deviceAddress, m_port);
 		if (!m_socket->waitForConnected()) {
@@ -406,7 +406,7 @@ void CommunicationThread::timerFunc()
 		looseFireRealData(obj);
 
 #ifdef _DEBUG
-		if (0) {
+		if (1) {
 			m_socket->connectToHost(m_deviceAddress, m_port);
 			if (!m_socket->waitForConnected()) {
 				//log(m_deviceAddress, m_socket->errorString());
