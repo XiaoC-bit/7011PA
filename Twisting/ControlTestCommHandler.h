@@ -28,6 +28,11 @@ private:
 
 	bool reSpin(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
+	
+	//启动测试前的准备：循环回读角度并 moveup/movedown，直至接近设定角度
+	bool prepareTest(CommunicationThread* socket, QJsonObject& obj, QString& err);
+
+
 	//归零
 	bool zero(CommunicationThread* socket, QJsonObject& obj, QString& err);
 

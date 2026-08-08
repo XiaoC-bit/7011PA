@@ -2,6 +2,7 @@
 #include "DataDefine.h"
 #include <qjsonarray.h>
 #include <qjsondocument.h>
+#include <QThread>
 ControlTestCommHandler::ControlTestCommHandler(ReadU65Struct& ref, QObject* parent)
 	: CommHandler(ref,parent)
 {}
@@ -27,6 +28,9 @@ bool ControlTestCommHandler::commFunc(CommunicationThread* socket, QJsonObject& 
 	}
 	else if (type == "start-test") {
 		return startTest(socket, obj, err);
+	}
+	else if (type == "prepare-test") {
+		return prepareTest(socket, obj, err);
 	}
     else if (type == "end-test") {
 		return stopTest(socket, obj, err);
@@ -1701,4 +1705,50 @@ bool ControlTestCommHandler::reSpin(CommunicationThread* socket, QJsonObject& ob
 		return false;
 	}
 	return true;
+}
+
+//启动测试前的准备：回读当前角度（0x0900块偏移0x34，即地址0x0934，float），
+//与设定角度比较，偏小则 moveup(spin)，偏大则 movedown(reSpin)，
+//每次只移动一点点，故循环"移动->回读->调整"，直到 |实际-设定| <= 阈值
+bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+	double targetAngle = obj.contains("targetAngle") ? obj["targetAngle"].toDouble() : 0.0143;// obj["targetAngle"].toDouble();
+	double threshold = obj.contains("threshold") ? obj["threshold"].toDouble() : 0.00005;
+	const int maxIterations = 5000; //安全上限，防止异常时死循环
+
+    //写入移动速度
+    if (!writeFloat(socket, 0x1108, 10, err))
+        return false;
+
+	for (int i = 0; i < maxIterations; i++) {
+		//读取当前角度：4字节，地址 0x0934（0x0900 + 0x34），按 float 解析
+		int32_t Hex32 = 0;
+		if (!readInt32(socket, 0x0934, Hex32, err)) {
+			return false;
+		}
+		float currentAngle = *reinterpret_cast<float*>(&Hex32);
+		qDebug() << "prepareTest current:" << currentAngle << "target:" << targetAngle;
+
+		double diff = currentAngle - targetAngle;
+		if (qAbs(diff) <= threshold) {
+			return true; //达到阈值，停止
+		}
+
+		//当前角度比设定角度小 -> moveup(spin)；否则 -> movedown(reSpin)
+		QJsonObject dummy;
+		bool moveOk = false;
+		if (diff < 0) {
+			moveOk = spin(socket, dummy, err);
+		}
+		else {
+			moveOk = reSpin(socket, dummy, err);
+		}
+		if (!moveOk) {
+			return false;
+		}
+
+		QThread::msleep(100); //等待电机移动一小段后再回读
+	}
+
+	err = "prepareTest exceeded max iterations";
+	return false;
 }
