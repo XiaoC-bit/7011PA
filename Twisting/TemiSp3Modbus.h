@@ -1,5 +1,4 @@
-#ifndef TEMISP3MODBUS_H
-
+﻿#ifndef TEMISP3MODBUS_H
 #define TEMISP3MODBUS_H
 
 #include <QObject>

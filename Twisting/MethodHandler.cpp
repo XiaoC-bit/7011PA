@@ -556,6 +556,17 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
     }
     labHumidity = testModeConfig["labHumidity"].toDouble();
 
+
+    double setAngle = 0.0;
+    if (testModeConfig["setAngle"].isNull())
+    {
+        qDebug() << "setAngle error";
+        return false;
+    }
+    setAngle = testModeConfig["setAngle"].toDouble();
+
+
+
     double torsionSpeed = 0;
     QString torsionUnit = "";
     QString mode = testModeConfig["mode"].toString();
@@ -863,6 +874,7 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
         direction = '%30'\
         ,specimenReturn = %31\
         ,ad_direction = '%32' \
+        ,set_angle = %33\
         where is_current = 1\
         ")
         .arg(specimenName)
@@ -896,7 +908,8 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
         .arg(delayTime)
         .arg(direction)
 		.arg(specimenReturn)
-		.arg(ad_direction)
+        .arg(ad_direction)
+        .arg(setAngle)
         ;
 
   
