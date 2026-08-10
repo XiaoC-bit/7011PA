@@ -3,6 +3,7 @@
 #include <QObject>
 
 #include "CommHandler.h"
+#include "TemiSp3Modbus.h"
 
 class ControlTestCommHandler  : public CommHandler
 {

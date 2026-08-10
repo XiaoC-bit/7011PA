@@ -21,4 +21,7 @@ private:
 
 	[[nodiscard]] bool startTest(const QSqlDatabase& configDb, const QSqlDatabase& testDb, QJsonObject& obj, QString& response);
 
+
+	[[nodiscard]] bool prepareTest(const QSqlDatabase& configDb, const QSqlDatabase& testDb, QJsonObject& obj, QString& response);
+
 };

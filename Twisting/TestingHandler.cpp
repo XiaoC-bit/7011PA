@@ -293,7 +293,7 @@ bool TestingHandler::transferMethodPreHandle(const QSqlDatabase& configDb, const
         qDebug() << testQuery.lastError().text();
         return false;
     }*/
-    //½«²âÊÔ¼ÇÂ¼È«²¿ÉèÖÃÎª·Çµ±Ç°×´Ì¬
+    //ï¿½ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½Â¼È«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Çµï¿½Ç°×´Ì¬
     strSql = QString("update queue set current = 0");
     if (!testQuery.exec(strSql)) {
         qDebug() << "Failed to fetch data:";
@@ -329,7 +329,7 @@ bool TestingHandler::transferMethodPreHandle(const QSqlDatabase& configDb, const
         }
         int lastId = -1;
         if (testQuery.next()) {
-            lastId = testQuery.value(0).toInt();//ID ¾ÍÊÇ×îºóÒ»´Î²åÈëÊý¾Ý×ÔÔöµÄid
+            lastId = testQuery.value(0).toInt();//ID ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Î²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½id
         }
     }
    
@@ -341,7 +341,46 @@ bool TestingHandler::transferMethodPreHandle(const QSqlDatabase& configDb, const
 }
 
 
+bool TestingHandler::prepareTest(const QSqlDatabase& configDb, const QSqlDatabase& testDb, QJsonObject& recvObj, QString& response) {
+    double targetAngle = recvObj.contains("targetAngle") ? recvObj["targetAngle"].toDouble() : 0.0143;// obj["targetAngle"].toDouble();
 
+    QString strSql = QString("select id from method_config where is_current = 1");
+    QSqlQuery configQuery(configDb);
+    QSqlQuery testQuery(testDb);
+    if (!configQuery.exec(strSql))
+    {
+        qDebug() << "Failed to fetch data:";
+        qDebug() << configQuery.lastError().text();
+        return false;
+    }
+    int methodId = 0;
+    if (configQuery.next())
+    {
+        methodId = configQuery.value("id").toInt();
+    }
+
+
+
+    strSql = QString("UPDATE method_config SET set_angle = %1 \
+        where id = %2\
+        ")
+        .arg(targetAngle)
+        .arg(methodId)
+        ;
+
+
+    if (!configQuery.exec(strSql))
+    {
+        qDebug() << "Failed to fetch data:";
+        qDebug() << configQuery.lastError().text();
+        return false;
+    }
+
+    recvObj["__channel"] = "control-message";
+    //recvObj["queue_id"] = lastId;
+
+    return true;
+}
 
 
 bool TestingHandler::startTest(const QSqlDatabase& configDb, const QSqlDatabase& testDb, QJsonObject& recvObj, QString& response)
@@ -645,7 +684,7 @@ bool TestingHandler::startTest(const QSqlDatabase& configDb, const QSqlDatabase&
     }
     int lastId = -1;
     if (testQuery.next()) {
-        lastId = testQuery.value(0).toInt();//ID ¾ÍÊÇ×îºóÒ»´Î²åÈëÊý¾Ý×ÔÔöµÄid
+        lastId = testQuery.value(0).toInt();//ID ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Î²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½id
     }
 
     recvObj["__channel"] = "control-message";
@@ -661,6 +700,9 @@ bool TestingHandler::isTransfer(const QJsonObject &obj)
         return true;
     }
     else if (type == "start-test") {
+        return true;
+    }
+    else if (type == "prepare-test") {
         return true;
     }
     return false;
@@ -684,6 +726,10 @@ bool TestingHandler::handleWsMsg(QJsonObject &recvObj, QString &response)
 	{
 		return startTest(configDb, testDb, recvObj, response);
 	}
+    else if (type == "prepare-test")
+    {
+        return prepareTest(configDb, testDb, recvObj, response);
+    }
     else
     {
         return false;
