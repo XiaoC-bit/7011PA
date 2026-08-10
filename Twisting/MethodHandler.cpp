@@ -1,4 +1,4 @@
-#include "MethodHandler.h"
+﻿#include "MethodHandler.h"
 
 #include <qdebug.h>
 #include <qsqlerror.h>
@@ -281,21 +281,21 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
         return false;
     }
 
-    // ͨ�ò������
+    // 通用参数配置
     if (configForm["initialMode"].isNull())
     {
         qDebug() << "initialMode error";
         return false;
     }
     auto initialMode = configForm["initialMode"].toString();
-    // �Ƕȹ���
+    // 角度归零
     if (configForm["initialLoadValue"].isNull())
     {
         qDebug() << "initialLoadValue error";
         return false;
     }
     double initialLoadValue = configForm["initialLoadValue"].toDouble();
-    // ���ι���
+    // 扭力单位
     if (configForm["unit"].isNull())
     {
         qDebug() << "unit error";
@@ -303,21 +303,21 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
     }
     auto unit = configForm["unit"].toString();
 
-	//���㷽ʽ
+	//清零方式
 	if (configForm["zeroMode"].isNull())
 	{
 		qDebug() << "zeroMode error";
 		return false;
 	}
-    //zeroMode��һ����������
-	// ȡ��һ������
+    //zeroMode是一个字符串数组
+	// 取出每一个元素
 	QJsonArray zeroModeArray = configForm["zeroMode"].toArray();
 	if (zeroModeArray.isEmpty())
 	{
 		qDebug() << "zeroMode array is empty";
 		return false;
 	}
-	//����ȡ�����ж��󣬶������ַ���
+	//遍历获取数组中对象，都是字符串
 	QStringList zeroModeList;
 	for (const QJsonValue& value : zeroModeArray)
 	{
@@ -332,47 +332,47 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
 			return false;
 		}
 	}
-	//���ַ����б�ת��Ϊ���ŷָ����ַ���
+	//将字符串列表转换为逗号分隔的字符串
 	QString zeroMode = zeroModeList.join(",");
 
 
 
-    // ��ʼ��
+    // 初始点
     if (configForm["startPoint"].isNull())
     {
         qDebug() << "startPoint error";
         return false;
     }
     double startPoint = configForm["startPoint"].toDouble();
-    // ������
+    // 结束点
     if (configForm["endCondition"].isNull())
     {
         qDebug() << "endCondition error";
         return false;
     }
     double endCondition = configForm["endCondition"].toDouble();
-    // ���Ť��
+    // 最大扭矩
     if (configForm["maxTorque"].isNull())
     {
         qDebug() << "maxTorque error";
         return false;
     }
     double maxTorque = configForm["maxTorque"].toDouble();
-    // ���Ƕ�
+    // 最大角度
     if (configForm["maxAngle"].isNull())
     {
         qDebug() << "maxAngle error";
         return false;
     }
     double maxAngle = configForm["maxAngle"].toDouble();
-    // �������ж�
+    // 断裂判定
     if (configForm["breakSensitivity"].isNull())
     {
         qDebug() << "breakSensitivity error";
         return false;
     }
     double breakSensitivity = configForm["breakSensitivity"].toDouble();
-    // �ƶ��ٶ�
+    // 移动速度
     if (configForm["moveSpeed"].isNull())
     {
         qDebug() << "moveSpeed error";
@@ -380,7 +380,7 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
     }
     double moveSpeed = configForm["moveSpeed"].toDouble();
 
-    //�Ƿ��λ
+    //是否复位
     if (configForm["specimenReturn"].isNull())
     {
         qDebug() << "specimenReturn error";
@@ -734,21 +734,21 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
         return false;
     }
 
-    // ͨ�ò������
+    // 通用参数配置
     if (configForm["initialMode"].isNull())
     {
         qDebug() << "initialMode error";
         return false;
     }
     auto initialMode = configForm["initialMode"].toString();
-    // �Ƕȹ���
+    // 角度归零
     if (configForm["initialLoadValue"].isNull())
     {
         qDebug() << "initialLoadValue error";
         return false;
     }
     double initialLoadValue = configForm["initialLoadValue"].toDouble();
-    // ���ι���
+    // 扭力单位
     if (configForm["unit"].isNull())
     {
         qDebug() << "unit error";
@@ -756,21 +756,21 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
     }
     auto unit = configForm["unit"].toString();
 
-    //���㷽ʽ
+    //清零方式
     if (configForm["zeroMode"].isNull())
     {
         qDebug() << "zeroMode error";
         return false;
     }
-    //zeroMode��һ����������
-    // ȡ��һ������
+    //zeroMode是一个字符串数组
+    // 取出每一个元素
     QJsonArray zeroModeArray = configForm["zeroMode"].toArray();
     if (zeroModeArray.isEmpty())
     {
         qDebug() << "zeroMode array is empty";
         return false;
     }
-    //����ȡ�����ж��󣬶������ַ���
+    //遍历获取数组中对象，都是字符串
     QStringList zeroModeList;
     for (const QJsonValue& value : zeroModeArray)
     {
@@ -785,47 +785,47 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
             return false;
         }
     }
-    //���ַ����б�ת��Ϊ���ŷָ����ַ���
+    //将字符串列表转换为逗号分隔的字符串
     QString zeroMode = zeroModeList.join(",");
 
 
 
-    // ��ʼ��
+    // 初始点
     if (configForm["startPoint"].isNull())
     {
         qDebug() << "startPoint error";
         return false;
     }
     double startPoint = configForm["startPoint"].toDouble();
-    // ������
+    // 结束点
     if (configForm["endCondition"].isNull())
     {
         qDebug() << "endCondition error";
         return false;
     }
     double endCondition = configForm["endCondition"].toDouble();
-    // ���Ť��
+    // 最大扭矩
     if (configForm["maxTorque"].isNull())
     {
         qDebug() << "maxTorque error";
         return false;
     }
     double maxTorque = configForm["maxTorque"].toDouble();
-    // ���Ƕ�
+    // 最大角度
     if (configForm["maxAngle"].isNull())
     {
         qDebug() << "maxAngle error";
         return false;
     }
     double maxAngle = configForm["maxAngle"].toDouble();
-    // �������ж�
+    // 断裂判定
     if (configForm["breakSensitivity"].isNull())
     {
         qDebug() << "breakSensitivity error";
         return false;
     }
     double breakSensitivity = configForm["breakSensitivity"].toDouble();
-    // �ƶ��ٶ�
+    // 移动速度
     if (configForm["moveSpeed"].isNull())
     {
         qDebug() << "moveSpeed error";
@@ -833,7 +833,7 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
     }
     double moveSpeed = configForm["moveSpeed"].toDouble();
 
-    //�Ƿ��λ
+    //是否复位
     if (configForm["specimenReturn"].isNull())
     {
         qDebug() << "specimenReturn error";
