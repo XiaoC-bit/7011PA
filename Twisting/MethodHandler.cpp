@@ -1120,15 +1120,15 @@ bool MethodHandler::deleteData(const QSqlDatabase &db, const QJsonObject &recvOb
 
 bool MethodHandler::handleWsMsg(QJsonObject &recvObj, QString &response)
 {
-    auto type = recvObj["__type"];
-    if (type == "fetchSerialPorts")
-    {
-        return fetchSerialPorts(recvObj, response);
-    }
-
     QSqlDatabase db;
     if (!getConfigDB(db))
         return false;
+
+    auto type = recvObj["__type"];
+    if (type == "fetchSerialPorts")
+    {
+        return fetchSerialPorts(db, recvObj, response);
+    }
 
     if (type == "addData")
     {
@@ -1159,7 +1159,7 @@ bool MethodHandler::handleWsMsg(QJsonObject &recvObj, QString &response)
     }
 }
 
-bool MethodHandler::fetchSerialPorts(const QJsonObject& recvObj, QString& response)
+bool MethodHandler::fetchSerialPorts(const QSqlDatabase& db, const QJsonObject& recvObj, QString& response)
 {
     QJsonArray portsArray;
     QJsonArray desArray;
@@ -1170,11 +1170,28 @@ bool MethodHandler::fetchSerialPorts(const QJsonObject& recvObj, QString& respon
         desArray.append(info.description());
     }
 
+    QString currentSerialPort;
+    QSqlQuery query(db);
+    QString strSql = QString("select modbus_serial_port from method_config where is_current = 1");
+    if (query.exec(strSql))
+    {
+        if (query.next())
+        {
+            currentSerialPort = query.value("modbus_serial_port").toString();
+        }
+    }
+    else
+    {
+        qDebug() << "Failed to fetch modbus_serial_port:";
+        qDebug() << query.lastError().text();
+    }
+
     QJsonObject jsonObj;
     jsonObj["__channel"] = channel_ + "-fetchSerialPorts";
     jsonObj["status"] = "success";
     jsonObj["data"] = portsArray;
     jsonObj["description"] = desArray;
+    jsonObj["currentSerialPort"] = currentSerialPort;
 
     QJsonDocument jsonDoc(jsonObj);
     response = jsonDoc.toJson();
@@ -1216,7 +1233,7 @@ bool MethodHandler::updateModbusSerialPort(const QSqlDatabase& db, QJsonObject& 
 
 
     QJsonObject jsonObj;
-    jsonObj["__channel"] = channel_ + "-modifyData";
+    jsonObj["__channel"] = channel_ + "-updateModbusSerialPort";
     jsonObj["status"] = "success";
     QJsonDocument jsonDoc(jsonObj);
     response = jsonDoc.toJson();
