@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "MsgHandler.h"
 #include <qsqlquery.h>
@@ -19,7 +19,10 @@ private:
 	[[nodiscard]] bool fetchData(const QSqlDatabase& db, const QJsonObject& obj, QString& response);
 	[[nodiscard]] bool deleteData(const QSqlDatabase& db, const QJsonObject& obj, QString& response);
 	[[nodiscard]] bool fetchDetail(const QSqlDatabase& db, const QJsonObject& obj, QString& response);
-	
-	//�޸ĵ�ǰ�����Ĳ���
+
+	//修改当前方法的参数
 	[[nodiscard]] bool modifyData(const QSqlDatabase& db, const QJsonObject& obj, QString& response);
+
+	//获取系统中的串口列表
+	[[nodiscard]] bool fetchSerialPorts(const QJsonObject& obj, QString& response);
 };

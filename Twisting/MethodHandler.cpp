@@ -7,6 +7,7 @@
 #include <qjsonarray.h>
 #include <qsqldatabase.h>
 #include <qjsondocument.h>
+#include <qserialportinfo.h>
 
 #include <qmessagebox.h>
 
@@ -280,21 +281,21 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
         return false;
     }
 
-    // Í¨ÓÃ²ÎÊý¼ì²é
+    // Í¨ï¿½Ã²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     if (configForm["initialMode"].isNull())
     {
         qDebug() << "initialMode error";
         return false;
     }
     auto initialMode = configForm["initialMode"].toString();
-    // ½Ç¶È¹éÁã
+    // ï¿½Ç¶È¹ï¿½ï¿½ï¿½
     if (configForm["initialLoadValue"].isNull())
     {
         qDebug() << "initialLoadValue error";
         return false;
     }
     double initialLoadValue = configForm["initialLoadValue"].toDouble();
-    // ±äÐÎ¹éÁã
+    // ï¿½ï¿½ï¿½Î¹ï¿½ï¿½ï¿½
     if (configForm["unit"].isNull())
     {
         qDebug() << "unit error";
@@ -302,21 +303,21 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
     }
     auto unit = configForm["unit"].toString();
 
-	//¹éÁã·½Ê½
+	//ï¿½ï¿½ï¿½ã·½Ê½
 	if (configForm["zeroMode"].isNull())
 	{
 		qDebug() << "zeroMode error";
 		return false;
 	}
-    //zeroModeÊÇÒ»¸ö¶ÔÏóÊý×é
-	// È¡µÚÒ»¸ö¶ÔÏó
+    //zeroModeï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// È¡ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	QJsonArray zeroModeArray = configForm["zeroMode"].toArray();
 	if (zeroModeArray.isEmpty())
 	{
 		qDebug() << "zeroMode array is empty";
 		return false;
 	}
-	//±éÀúÈ¡³öËùÓÐ¶ÔÏó£¬¶ÔÏóÊÇ×Ö·û´®
+	//ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ó£¬¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½
 	QStringList zeroModeList;
 	for (const QJsonValue& value : zeroModeArray)
 	{
@@ -331,47 +332,47 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
 			return false;
 		}
 	}
-	//½«×Ö·û´®ÁÐ±í×ª»»Îª¶ººÅ·Ö¸ôµÄ×Ö·û´®
+	//ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Ð±ï¿½×ªï¿½ï¿½Îªï¿½ï¿½ï¿½Å·Ö¸ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½
 	QString zeroMode = zeroModeList.join(",");
 
 
 
-    // ÆðÊ¼µã
+    // ï¿½ï¿½Ê¼ï¿½ï¿½
     if (configForm["startPoint"].isNull())
     {
         qDebug() << "startPoint error";
         return false;
     }
     double startPoint = configForm["startPoint"].toDouble();
-    // ½áÊøµã
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     if (configForm["endCondition"].isNull())
     {
         qDebug() << "endCondition error";
         return false;
     }
     double endCondition = configForm["endCondition"].toDouble();
-    // ×î´óÅ¤Á¦
+    // ï¿½ï¿½ï¿½Å¤ï¿½ï¿½
     if (configForm["maxTorque"].isNull())
     {
         qDebug() << "maxTorque error";
         return false;
     }
     double maxTorque = configForm["maxTorque"].toDouble();
-    // ×î´ó½Ç¶È
+    // ï¿½ï¿½ï¿½Ç¶ï¿½
     if (configForm["maxAngle"].isNull())
     {
         qDebug() << "maxAngle error";
         return false;
     }
     double maxAngle = configForm["maxAngle"].toDouble();
-    // ¶ÏÁÑÃô¸Ð¶È
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
     if (configForm["breakSensitivity"].isNull())
     {
         qDebug() << "breakSensitivity error";
         return false;
     }
     double breakSensitivity = configForm["breakSensitivity"].toDouble();
-    // ÒÆ¶¯ËÙ¶È
+    // ï¿½Æ¶ï¿½ï¿½Ù¶ï¿½
     if (configForm["moveSpeed"].isNull())
     {
         qDebug() << "moveSpeed error";
@@ -379,7 +380,7 @@ bool MethodHandler::addData(const QSqlDatabase &db, const QJsonObject &recvObj, 
     }
     double moveSpeed = configForm["moveSpeed"].toDouble();
 
-    //ÊÇ·ñ»ØÎ»
+    //ï¿½Ç·ï¿½ï¿½Î»
     if (configForm["specimenReturn"].isNull())
     {
         qDebug() << "specimenReturn error";
@@ -733,21 +734,21 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
         return false;
     }
 
-    // Í¨ÓÃ²ÎÊý¼ì²é
+    // Í¨ï¿½Ã²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     if (configForm["initialMode"].isNull())
     {
         qDebug() << "initialMode error";
         return false;
     }
     auto initialMode = configForm["initialMode"].toString();
-    // ½Ç¶È¹éÁã
+    // ï¿½Ç¶È¹ï¿½ï¿½ï¿½
     if (configForm["initialLoadValue"].isNull())
     {
         qDebug() << "initialLoadValue error";
         return false;
     }
     double initialLoadValue = configForm["initialLoadValue"].toDouble();
-    // ±äÐÎ¹éÁã
+    // ï¿½ï¿½ï¿½Î¹ï¿½ï¿½ï¿½
     if (configForm["unit"].isNull())
     {
         qDebug() << "unit error";
@@ -755,21 +756,21 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
     }
     auto unit = configForm["unit"].toString();
 
-    //¹éÁã·½Ê½
+    //ï¿½ï¿½ï¿½ã·½Ê½
     if (configForm["zeroMode"].isNull())
     {
         qDebug() << "zeroMode error";
         return false;
     }
-    //zeroModeÊÇÒ»¸ö¶ÔÏóÊý×é
-    // È¡µÚÒ»¸ö¶ÔÏó
+    //zeroModeï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // È¡ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     QJsonArray zeroModeArray = configForm["zeroMode"].toArray();
     if (zeroModeArray.isEmpty())
     {
         qDebug() << "zeroMode array is empty";
         return false;
     }
-    //±éÀúÈ¡³öËùÓÐ¶ÔÏó£¬¶ÔÏóÊÇ×Ö·û´®
+    //ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ó£¬¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½
     QStringList zeroModeList;
     for (const QJsonValue& value : zeroModeArray)
     {
@@ -784,47 +785,47 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
             return false;
         }
     }
-    //½«×Ö·û´®ÁÐ±í×ª»»Îª¶ººÅ·Ö¸ôµÄ×Ö·û´®
+    //ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Ð±ï¿½×ªï¿½ï¿½Îªï¿½ï¿½ï¿½Å·Ö¸ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½
     QString zeroMode = zeroModeList.join(",");
 
 
 
-    // ÆðÊ¼µã
+    // ï¿½ï¿½Ê¼ï¿½ï¿½
     if (configForm["startPoint"].isNull())
     {
         qDebug() << "startPoint error";
         return false;
     }
     double startPoint = configForm["startPoint"].toDouble();
-    // ½áÊøµã
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     if (configForm["endCondition"].isNull())
     {
         qDebug() << "endCondition error";
         return false;
     }
     double endCondition = configForm["endCondition"].toDouble();
-    // ×î´óÅ¤Á¦
+    // ï¿½ï¿½ï¿½Å¤ï¿½ï¿½
     if (configForm["maxTorque"].isNull())
     {
         qDebug() << "maxTorque error";
         return false;
     }
     double maxTorque = configForm["maxTorque"].toDouble();
-    // ×î´ó½Ç¶È
+    // ï¿½ï¿½ï¿½Ç¶ï¿½
     if (configForm["maxAngle"].isNull())
     {
         qDebug() << "maxAngle error";
         return false;
     }
     double maxAngle = configForm["maxAngle"].toDouble();
-    // ¶ÏÁÑÃô¸Ð¶È
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
     if (configForm["breakSensitivity"].isNull())
     {
         qDebug() << "breakSensitivity error";
         return false;
     }
     double breakSensitivity = configForm["breakSensitivity"].toDouble();
-    // ÒÆ¶¯ËÙ¶È
+    // ï¿½Æ¶ï¿½ï¿½Ù¶ï¿½
     if (configForm["moveSpeed"].isNull())
     {
         qDebug() << "moveSpeed error";
@@ -832,7 +833,7 @@ bool MethodHandler::modifyData(const QSqlDatabase& db, const QJsonObject& recvOb
     }
     double moveSpeed = configForm["moveSpeed"].toDouble();
 
-    //ÊÇ·ñ»ØÎ»
+    //ï¿½Ç·ï¿½ï¿½Î»
     if (configForm["specimenReturn"].isNull())
     {
         qDebug() << "specimenReturn error";
@@ -1119,11 +1120,16 @@ bool MethodHandler::deleteData(const QSqlDatabase &db, const QJsonObject &recvOb
 
 bool MethodHandler::handleWsMsg(QJsonObject &recvObj, QString &response)
 {
+    auto type = recvObj["__type"];
+    if (type == "fetchSerialPorts")
+    {
+        return fetchSerialPorts(recvObj, response);
+    }
+
     QSqlDatabase db;
     if (!getConfigDB(db))
         return false;
 
-    auto type = recvObj["__type"];
     if (type == "addData")
     {
         return addData(db, recvObj, response);
@@ -1147,4 +1153,23 @@ bool MethodHandler::handleWsMsg(QJsonObject &recvObj, QString &response)
     {
         return false;
     }
+}
+
+bool MethodHandler::fetchSerialPorts(const QJsonObject& recvObj, QString& response)
+{
+    QJsonArray portsArray;
+    const auto ports = QSerialPortInfo::availablePorts();
+    for (const QSerialPortInfo& info : ports)
+    {
+        portsArray.append(info.portName());
+    }
+
+    QJsonObject jsonObj;
+    jsonObj["__channel"] = channel_ + "-fetchSerialPorts";
+    jsonObj["status"] = "success";
+    jsonObj["data"] = portsArray;
+
+    QJsonDocument jsonDoc(jsonObj);
+    response = jsonDoc.toJson();
+    return true;
 }

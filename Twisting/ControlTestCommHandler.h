@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <QObject>
 
@@ -30,35 +30,35 @@ private:
 	bool reSpin(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
 	
-	//Æô¶¯²âÊÔÇ°µÄ×¼±¸£ºÑ­»·»Ø¶Á½Ç¶È²¢ moveup/movedown£¬Ö±ÖÁ½Ó½üÉè¶¨½Ç¶È
+	//å¯åŠ¨æµ‹è¯•å‰çš„å‡†å¤‡ï¼šå¾ªç¯å›è¯»è§’åº¦å¹¶ moveup/movedownï¼Œç›´è‡³æ¥è¿‘è®¾å®šè§’åº¦
 	bool prepareTest(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
-	//¼Ğ³Ö/ËÉ¿ª
+	//å¤¹æŒ/æ¾å¼€
 	bool grip(CommunicationThread* socket, QJsonObject& obj, QString& err);
 	bool release(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
 
-	//¹éÁã
+	//å½’é›¶
 	bool zero(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
-	//Ğ´ÈëX DIR
+	//å†™å…¥X DIR
 	bool setXDIR(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
-	//Ğ´ÈëYZ DIR
+	//å†™å…¥YZ DIR
 	bool setYZDIR(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
-	//Ğ´Èë XGAIN
+	//å†™å…¥ XGAIN
 	bool setXGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err);
-	//Ğ´ÈëYZ GAIN
+	//å†™å…¥YZ GAIN
 	bool setYZGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
 	bool setADGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err);
 	bool setADCAP(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
-	//Ğ´Èë²ÉÑùÂÊ
+	//å†™å…¥é‡‡æ ·ç‡
 	bool setSamplingRate(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
-	//Ğ´ÈëDIR_FLAG
+	//å†™å…¥DIR_FLAG
 	bool setAD1_DIR(CommunicationThread* socket, QJsonObject& obj, QString& err);
 	bool setAD2_DIR(CommunicationThread* socket, QJsonObject& obj, QString& err);
 	bool setAD1_UPDN(CommunicationThread* socket, QJsonObject& obj, QString& err);
@@ -66,6 +66,8 @@ private:
 	
 private:
 
-	//µ¥¸öĞ´ÈëDF SET
+	//å•ä¸ªå†™å…¥DF SET
 	bool perSetDfSet(CommunicationThread* socket, DF_SET& df_set, QString& err);
+
+	TemiSp3Modbus modbus;
 };
