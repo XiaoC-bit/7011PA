@@ -1158,16 +1158,19 @@ bool MethodHandler::handleWsMsg(QJsonObject &recvObj, QString &response)
 bool MethodHandler::fetchSerialPorts(const QJsonObject& recvObj, QString& response)
 {
     QJsonArray portsArray;
+    QJsonArray desArray;
     const auto ports = QSerialPortInfo::availablePorts();
     for (const QSerialPortInfo& info : ports)
     {
         portsArray.append(info.portName());
+        desArray.append(info.description());
     }
 
     QJsonObject jsonObj;
     jsonObj["__channel"] = channel_ + "-fetchSerialPorts";
     jsonObj["status"] = "success";
     jsonObj["data"] = portsArray;
+    jsonObj["description"] = desArray;
 
     QJsonDocument jsonDoc(jsonObj);
     response = jsonDoc.toJson();
