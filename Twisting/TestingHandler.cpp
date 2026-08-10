@@ -293,7 +293,7 @@ bool TestingHandler::transferMethodPreHandle(const QSqlDatabase& configDb, const
         qDebug() << testQuery.lastError().text();
         return false;
     }*/
-    //�����Լ�¼ȫ������Ϊ�ǵ�ǰ״̬
+    //将已有的记录全部更新为非当前状态
     strSql = QString("update queue set current = 0");
     if (!testQuery.exec(strSql)) {
         qDebug() << "Failed to fetch data:";
@@ -329,7 +329,7 @@ bool TestingHandler::transferMethodPreHandle(const QSqlDatabase& configDb, const
         }
         int lastId = -1;
         if (testQuery.next()) {
-            lastId = testQuery.value(0).toInt();//ID �������һ�β�������������id
+            lastId = testQuery.value(0).toInt();//ID 自增返回最后一次插入记录的id
         }
     }
    
@@ -691,7 +691,7 @@ bool TestingHandler::startTest(const QSqlDatabase& configDb, const QSqlDatabase&
     }
     int lastId = -1;
     if (testQuery.next()) {
-        lastId = testQuery.value(0).toInt();//ID �������һ�β�������������id
+        lastId = testQuery.value(0).toInt();//ID 自增返回最后一次插入记录的id
     } 
 
     recvObj["__channel"] = "control-message";

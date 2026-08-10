@@ -1,4 +1,4 @@
-// communicationthread.cpp
+ï»¿// communicationthread.cpp
 #include "communicationthread.h"
 #include <Windows.h>
 #include <qdebug.h>
@@ -14,9 +14,9 @@
 CommunicationThread::CommunicationThread(QObject* parent) : QThread(parent), m_socket(nullptr), m_sendTimer(nullptr), recNum1_(0), powerOn_(true)
 {
 
-	commHandlers_["normal-message"] = new NormalCommHandler(u65Info, this);//³£¹æÍ¨Ñ¶
-	commHandlers_["control-message"] = new ControlTestCommHandler(u65Info, this);//³£¹æÍ¨Ñ¶
-	commHandlers_["pid-message"] = new PIDCommHandler(u65Info, this);//³£¹æÍ¨Ñ¶
+	commHandlers_["normal-message"] = new NormalCommHandler(u65Info, this);//å¸¸è§„é€šè®¯
+	commHandlers_["control-message"] = new ControlTestCommHandler(u65Info, this);//å¸¸è§„é€šè®¯
+	commHandlers_["pid-message"] = new PIDCommHandler(u65Info, this);//å¸¸è§„é€šè®¯
 
 	useRealTime_ = false;
 
@@ -44,14 +44,14 @@ QString CommunicationThread::ip() {
 }
 
 void CommunicationThread::run()
-{
+{ 
 	qDebug() << QThread::currentThreadId();
 	if (m_socket == nullptr) {
 		m_socket = new QTcpSocket();
 	}
 
 	if (m_socket->state() != QAbstractSocket::ConnectedState) {
-		m_socket->setProxy(QNetworkProxy::NoProxy);//¶ÔÓÚ¿ªÁËVPNµÄ»úÆ÷£¬ĞèÒªÉèÖÃ´ËÏî
+		m_socket->setProxy(QNetworkProxy::NoProxy);//å¯¹äºå¼€äº†VPNçš„æœºå™¨ï¼Œéœ€è¦è®¾ç½®æ­¤é¡¹
 #ifdef _DEBUG
 		m_socket->connectToHost(m_deviceAddress, m_port);
 		if (!m_socket->waitForConnected()) {
@@ -66,11 +66,11 @@ void CommunicationThread::run()
 	}
 
 	if (m_sendTimer == nullptr) {
-		//ÔÚ×ÓÏß³ÌÖĞ´´½¨¶ÔÏó£¬²»ÒªÖ¸¶¨parent£¬·ñÔò»á±¨´í£ºÔÚ×ÓÏß³ÌÖĞ´´½¨ÁË×Ó¶ÔÏó£¬¶ø¸¸¶ÔÏóÈ´ÔÚÁíÒ»¸öÏß³Ì
+		//åœ¨å­çº¿ç¨‹ä¸­åˆ›å»ºå¯¹è±¡ï¼Œä¸è¦æŒ‡å®šparentï¼Œå¦åˆ™ä¼šæŠ¥é”™ï¼šåœ¨å­çº¿ç¨‹ä¸­åˆ›å»ºäº†å­å¯¹è±¡ï¼Œè€Œçˆ¶å¯¹è±¡å´åœ¨å¦ä¸€ä¸ªçº¿ç¨‹
 		m_sendTimer = new QTimer();
 
-		//²»ÒªÖ±½Ó½¨Á¢ĞÅºÅ²Ûº¯Êıµ½CommunicationThread£¬ÕâÑù»áÔÚÖ÷Ïß³ÌÖ´ĞĞ
-		// ÎÒÃÇĞèÒªÔÚ×ÓÏß³ÌÖĞÖ´ĞĞ
+		//ä¸è¦ç›´æ¥å»ºç«‹ä¿¡å·æ§½å‡½æ•°åˆ°CommunicationThreadï¼Œè¿™æ ·ä¼šåœ¨ä¸»çº¿ç¨‹æ‰§è¡Œ
+		// æˆ‘ä»¬éœ€è¦åœ¨å­çº¿ç¨‹ä¸­æ‰§è¡Œ
 	   // connect(m_sendTimer, &QTimer::timeout, this, &CommunicationThread::timerFunc);
 		QObject::connect(m_sendTimer, &QTimer::timeout, [&]() {
 			this->timerFunc();
@@ -79,14 +79,14 @@ void CommunicationThread::run()
 		connect(this, SIGNAL(startTimer()), m_sendTimer, SLOT(start()));
 		connect(this, SIGNAL(stopTimer()), m_sendTimer, SLOT(stop()));
 	}
-	//Ã¿600ms¶ÁÈ¡Ò»´ÎÊı¾İ£¬¿ÉÄÜÓĞÆäËûÍ¨Ñ¶ÈÎÎñ£¬½«¶¨Ê±Æ÷¼ä¸ôÉèÖÃĞ¡Ò»µã
-	//¶ÁÈ¡ÀúÊ·×ÊÁÏÇøµÄ»°£¬¿ÉÒÔ²»ÓÃÕâÃ´Æµ·±£¬´ıÓÅ»¯
+	//æ¯600msè¯»å–ä¸€æ¬¡æ•°æ®ï¼Œå¯èƒ½æœ‰å…¶ä»–é€šè®¯ä»»åŠ¡ï¼Œå°†å®šæ—¶å™¨é—´éš”è®¾ç½®å°ä¸€ç‚¹
+	//è¯»å–å†å²èµ„æ–™åŒºçš„è¯ï¼Œå¯ä»¥ä¸ç”¨è¿™ä¹ˆé¢‘ç¹ï¼Œå¾…ä¼˜åŒ–
 	m_sendTimer->setInterval(5);
 	m_sendTimer->start();
 
 	exec(); // Start event loop
 
-	//ÍË³öÑ­»·Ç°¶Ï¿ªÁ¬½Ó
+	//é€€å‡ºå¾ªç¯å‰æ–­å¼€è¿æ¥
 	if (m_sendTimer->isActive())
 		m_sendTimer->stop();
 	m_socket->disconnectFromHost();
@@ -121,7 +121,7 @@ bool CommunicationThread::readData(QByteArray& data, int timeout) {
 }
 
 
-//¸ü»»ipµØÖ·
+//æ›´æ¢ipåœ°å€
 void CommunicationThread::setDeviceAddress(const QString& ip) {
 	m_deviceAddress = ip;
 }
@@ -139,7 +139,7 @@ void CommunicationThread::normalTimerFunc() {
 	obj["__channel"] = "normal-message";
 	obj["__type"] = "real-data";
 	obj["__deviceId"] = deviceId_;
-	bool ret = commHandlers_["normal-message"]->commFunc(this, obj, strErr);//ÓëÉè±¸Í¨Ñ¶£¬ÅäÖÃjsonObj
+	bool ret = commHandlers_["normal-message"]->commFunc(this, obj, strErr);//ä¸è®¾å¤‡é€šè®¯ï¼Œé…ç½®jsonObj
 	if (!ret) {
 		log(m_deviceAddress, strErr);
 		return;
@@ -147,14 +147,14 @@ void CommunicationThread::normalTimerFunc() {
 	} 
 	  
 	//qDebug() << obj["machType"].toString() <<"ip " << m_deviceAddress << " dev id " << deviceId_;
-	//Éè±¸Í¨Ñ¶Íê±Ï£¬Í¨ÖªÇ°¶Ë
+	//è®¾å¤‡é€šè®¯å®Œæ¯•ï¼Œé€šçŸ¥å‰ç«¯
 	//emit wsResponse(obj);
 	obj["connectErr"] = false;
 	looseFireRealData(obj);
 
-	//Í¨ÖªProcessor,½øĞĞ²âÊÔÊı¾İ´¦Àí
+	//é€šçŸ¥Processor,è¿›è¡Œæµ‹è¯•æ•°æ®å¤„ç†
 	U65RawData info;
-	//½«Í¨Ñ¶Êı¾İ»ñÈ¡ºó£¬×éºÏ½á¹¹Ìå£¬·¢µ½Êı¾İ´¦ÀíÏß³Ì
+	//å°†é€šè®¯æ•°æ®è·å–åï¼Œç»„åˆç»“æ„ä½“ï¼Œå‘åˆ°æ•°æ®å¤„ç†çº¿ç¨‹
 	ReadU65Struct rawData = commHandlers_["normal-message"]->U65Info_;
 	info.sStar = rawData.sStar;
 	info.sQuotation = rawData.sQuotation;
@@ -163,7 +163,7 @@ void CommunicationThread::normalTimerFunc() {
 		info.tanPA = 0;
 	}
 	else
-		info.tanPA = rawData.sDoubleQuotation / rawData.sQuotation;// ×Ô¼º¼ÆËãtanPA
+		info.tanPA = rawData.sDoubleQuotation / rawData.sQuotation;// è‡ªå·±è®¡ç®—tanPA
 	info.angle = rawData.SITA * 3.14 / 180;
 	info.P = rawData.AD_2;
 	info.upperTemp = rawData.upperTemp;
@@ -171,12 +171,12 @@ void CommunicationThread::normalTimerFunc() {
 	info.U65Info = rawData;
 
 	if (false) {
-		//Í¨¹ı¶ÁÈ¡×ÊÁÏÇøµÄ·½Ê½,Ä£Äâ²É¼¯
+		//é€šè¿‡è¯»å–èµ„æ–™åŒºçš„æ–¹å¼,æ¨¡æ‹Ÿé‡‡é›†
 		return fakeData(info);
 	}
 	else {
 		//qDebug() << "fire " << info.U65Info.REAL_MSG_CT;
-		//¶ÁÈ¡»º³åÇø
+		//è¯»å–ç¼“å†²åŒº
 		emit fireRegularInfo(QVariant::fromValue(info));
 	}
 }
@@ -184,9 +184,9 @@ void CommunicationThread::normalTimerFunc() {
 /**
  * .
  * 
- * \param info	´Ó¼°Ê±×ÊÁÏÇø¶ÁÈ¡µÄÊı¾İ
- * \param fakeInfo ´ÓÀúÊ·×ÊÁÏÇø5000¸öµã£¬¶ÁÈ¡µÄÊı¾İ¡£ÖØĞÂÌîÈëfakeInfo£¬Î±ÔìÊı¾İ¸øÊı¾İ´¦ÀíÏß³Ì
- * \param readRec2 ÊÇ·ñÊ¹ÓÃÀúÊ·×ÊÁÏÇøµÄµÚ¶ş¸öÇøÓò
+ * \param info	ä»åŠæ—¶èµ„æ–™åŒºè¯»å–çš„æ•°æ®
+ * \param fakeInfo ä»å†å²èµ„æ–™åŒº5000ä¸ªç‚¹ï¼Œè¯»å–çš„æ•°æ®ã€‚é‡æ–°å¡«å…¥fakeInfoï¼Œä¼ªé€ æ•°æ®ç»™æ•°æ®å¤„ç†çº¿ç¨‹
+ * \param readRec2 æ˜¯å¦ä½¿ç”¨å†å²èµ„æ–™åŒºçš„ç¬¬äºŒä¸ªåŒºåŸŸ
  * \return 
  */
 bool CommunicationThread::readRecData(const U65RawData& info, U65RawData &fakeInfo, bool readRec2) {
@@ -200,7 +200,7 @@ bool CommunicationThread::readRecData(const U65RawData& info, U65RawData &fakeIn
 			obj["__type"] = "read-data";
 			obj["addr"] = 0x20000 + 32 * pow(2.0, int(info.U65Info.REC_COMP)) * (recNum1_ + 1);
 			obj["length"] = 32;
-			bool ret = commHandlers_["normal-message"]->commFunc(this, obj, strErr);//ÓëÉè±¸Í¨Ñ¶£¬ÅäÖÃjsonObj
+			bool ret = commHandlers_["normal-message"]->commFunc(this, obj, strErr);//ä¸è®¾å¤‡é€šè®¯ï¼Œé…ç½®jsonObj
 			if (!ret) {
 				log(m_deviceAddress, strErr);
 				return false;
@@ -217,7 +217,7 @@ bool CommunicationThread::readRecData(const U65RawData& info, U65RawData &fakeIn
 				obj["__type"] = "read-data";
 				obj["addr"] = 0x20000 + 32 * (ttl + ttk);
 				obj["length"] = 32;
-				bool ret = commHandlers_["normal-message"]->commFunc(this, obj, strErr);//ÓëÉè±¸Í¨Ñ¶£¬ÅäÖÃjsonObj
+				bool ret = commHandlers_["normal-message"]->commFunc(this, obj, strErr);//ä¸è®¾å¤‡é€šè®¯ï¼Œé…ç½®jsonObj
 				if (!ret) {
 					log(m_deviceAddress, strErr);
 					return false;
@@ -231,7 +231,7 @@ bool CommunicationThread::readRecData(const U65RawData& info, U65RawData &fakeIn
 		obj["__type"] = "read-data";
 		obj["addr"] = 0x047120 + 32 * (recNum2_);
 		obj["length"] = 32;
-		bool ret = commHandlers_["normal-message"]->commFunc(this, obj, strErr);//ÓëÉè±¸Í¨Ñ¶£¬ÅäÖÃjsonObj
+		bool ret = commHandlers_["normal-message"]->commFunc(this, obj, strErr);//ä¸è®¾å¤‡é€šè®¯ï¼Œé…ç½®jsonObj
 		if (!ret) {
 			log(m_deviceAddress, strErr);
 			return false;
@@ -260,11 +260,11 @@ bool CommunicationThread::readRecData(const U65RawData& info, U65RawData &fakeIn
 	/*qDebug() << "fakeInfo.upperTemp " << fakeInfo.upperTemp;
 	qDebug() << "fakeInfo.lowerTemp " << fakeInfo.lowerTemp;*/
 
-	//ÉèÖÃ¹ØÃÅ\ºÏÄ£µÄ×´Ì¬
+	//è®¾ç½®å…³é—¨\åˆæ¨¡çš„çŠ¶æ€
 	fakeInfo.U65Info.U65_MSG3 |= (1 << 9);
 	fakeInfo.U65Info.IO1_IN &= ~(1 << 2);
 
-	//ÉèÖÃÎª²âÊÔÖĞ
+	//è®¾ç½®ä¸ºæµ‹è¯•ä¸­
 	fakeInfo.U65Info.U65_MODE = 3;
 	fakeInfo.U65Info.U65_MSG = 11;
 
@@ -298,7 +298,7 @@ void CommunicationThread::handleWsRequest(const QJsonObject& obj) {
 }
 
 
-//´¦ÀíÍ¨Ñ¶¿ØÖÆÏûÏ¢
+//å¤„ç†é€šè®¯æ§åˆ¶æ¶ˆæ¯
 void CommunicationThread::handleCommCtrlMsg(const QJsonObject& recvObj) {
 	const QString channel = "control-comm-system";
 	auto type = recvObj["__type"].toString();
@@ -312,7 +312,7 @@ void CommunicationThread::handleCommCtrlMsg(const QJsonObject& recvObj) {
 		powerOn_ = false;
 	}
 	else if (type == "connect") {
-		m_socket->disconnect();//¶Ï¿ªÁ¬½Ó
+		m_socket->disconnect();//æ–­å¼€è¿æ¥
 		setDeviceAddress(recvObj["ip"].toString());
 		powerOn_ = true;
 	}
@@ -322,7 +322,7 @@ void CommunicationThread::handleCommCtrlMsg(const QJsonObject& recvObj) {
 }
 
 void CommunicationThread::otherTimerFunc() {
-	//È¡³ö´ı·¢ËÍÊı¾İ
+	//å–å‡ºå¾…å‘é€æ•°æ®
 	writeMtx_.lock();
 	QJsonObject obj = writeQueue_.front();
 	writeQueue_.pop_front();
@@ -335,7 +335,7 @@ void CommunicationThread::otherTimerFunc() {
 		return;
 	}
 	QString strErr;
-	bool ret = it.value()->commFunc(this, obj, strErr);//ÓëÉè±¸Í¨Ñ¶£¬ÅäÖÃjsonObj
+	bool ret = it.value()->commFunc(this, obj, strErr);//ä¸è®¾å¤‡é€šè®¯ï¼Œé…ç½®jsonObj
 	if (!ret) {
 
 		QString type = obj["__type"].toString();
@@ -345,7 +345,7 @@ void CommunicationThread::otherTimerFunc() {
 		// m_socket->disconnectFromHost();
 	}
 
-	//Éè±¸Í¨Ñ¶Íê±Ï£¬Í¨ÖªÇ°¶Ë
+	//è®¾å¤‡é€šè®¯å®Œæ¯•ï¼Œé€šçŸ¥å‰ç«¯
 	emit wsResponse(obj);
 }
 #ifdef _DEBUG
@@ -367,7 +367,7 @@ void CommunicationThread::timerFunc()
 
 	if (!powerOn_) {
 
-		//¶Ï¿ªÁ¬½ÓÊ±£¬Ò²ĞèÒªÍ¨ÖªÇ°¶Ë
+		//æ–­å¼€è¿æ¥æ—¶ï¼Œä¹Ÿéœ€è¦é€šçŸ¥å‰ç«¯
 		QJsonObject obj;
 		obj["__channel"] = "normal-message";
 		obj["__type"] = "real-data";
@@ -377,14 +377,14 @@ void CommunicationThread::timerFunc()
 
 		return;
 	}
-	//¼ì²éÌ×½Ó×Ö×´Ì¬
+	//æ£€æŸ¥å¥—æ¥å­—çŠ¶æ€
 	if (m_socket->state() != QAbstractSocket::ConnectedState) {
 		QJsonObject obj;
 		obj["__channel"] = "normal-message";
 		obj["__type"] = "real-data";
 		obj["__deviceId"] = deviceId_;
 #ifdef _DEBUG
-		//ÓÃÀ´²âÊÔµ¥Î»ÏÔÊ¾
+		//ç”¨æ¥æµ‹è¯•å•ä½æ˜¾ç¤º
 		//obj["connectErr"] = false;
 		//obj["sStar"] = 10;
 		//obj["sQuotation"] = 10;
@@ -392,12 +392,12 @@ void CommunicationThread::timerFunc()
 		//obj["upperTemp"] = 10;
 		//obj["lowerTemp"] = 10;
 
-		//obj["torque"] = 1.1;//Å¤×ª»ú  Å¤¾Ø
-		//obj["angle"] = 2.2;//Å¤×ª»ú  Å¤¾Ø
-		//obj["axialDisplacement"] = 3.3;//Å¤×ª»ú  ÖáÏòÎ»ÒÆ
+		//obj["torque"] = 1.1;//æ‰­è½¬æœº  æ‰­çŸ©
+		//obj["angle"] = 2.2;//æ‰­è½¬æœº  æ‰­çŸ©
+		//obj["axialDisplacement"] = 3.3;//æ‰­è½¬æœº  è½´å‘ä½ç§»
 
-		//obj["twistCount"] = 4;//Å¤×ª»ú  ÖáÏòÎ»ÒÆ
-		//obj["testTimer"] = 3389;//Å¤×ª»ú  ÖáÏòÎ»ÒÆ
+		//obj["twistCount"] = 4;//æ‰­è½¬æœº  è½´å‘ä½ç§»
+		//obj["testTimer"] = 3389;//æ‰­è½¬æœº  è½´å‘ä½ç§»
 		obj["connectErr"] = true;
 #else
 		obj["connectErr"] = true;
@@ -427,9 +427,9 @@ void CommunicationThread::timerFunc()
 			obj["type"] = "error";
 			obj["message"] = "can not connect to machine";
 			emit wsResponse(obj);
-			//Í¨Ñ¶²»ÉÏ,Çå¿ÕËùÓĞµÄ´ıÍ¨Ñ¶ÈÎÎñ
+			//é€šè®¯ä¸ä¸Š,æ¸…ç©ºæ‰€æœ‰çš„å¾…é€šè®¯ä»»åŠ¡
 #ifdef _DEBUG
-			//²âÊÔ²»Çå¿Õ
+			//æµ‹è¯•ä¸æ¸…ç©º
 			//writeQueue_.clear();
 #else
 			writeQueue_.clear();
@@ -438,15 +438,15 @@ void CommunicationThread::timerFunc()
 		}
 
 #ifdef _DEBUG
-		//ÏÂÒ»´ÎÑ­»·ÔÙÍ¨Ñ¶
+		//ä¸‹ä¸€æ¬¡å¾ªç¯å†é€šè®¯
 		//return;
 #else
 		return;
 #endif
 	}
 
-	if (!writeQueue_.empty()) {//ÆÕÍ¨Í¨Ñ¶ÊÕ·¢¹ı³Ì½áÊø£¬ÇÒ´ı·¢ËÍ¶ÓÁĞ·Ç¿Õ
-		//ÔİÊ±¶Ï¿ªĞÅºÅ²Û£¬ÔÚº¯ÊıÖĞÖ±½Ó¶ÁÈ¡Êı¾İ
+	if (!writeQueue_.empty()) {//æ™®é€šé€šè®¯æ”¶å‘è¿‡ç¨‹ç»“æŸï¼Œä¸”å¾…å‘é€é˜Ÿåˆ—éç©º
+		//æš‚æ—¶æ–­å¼€ä¿¡å·æ§½ï¼Œåœ¨å‡½æ•°ä¸­ç›´æ¥è¯»å–æ•°æ®
 		otherTimerFunc();
 	}
 	else {
@@ -489,7 +489,7 @@ void CommunicationThread::log(const QString& str) {
 }
 
 void CommunicationThread::log(const QString& ip, const QString& str) {
-	return;//Ğ´ÈÕÖ¾Ì«Æµ·±ÁË
+	return;//å†™æ—¥å¿—å¤ªé¢‘ç¹äº†
 	qDebug()
 		<< "ip "
 		<< ip

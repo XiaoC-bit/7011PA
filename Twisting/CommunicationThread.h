@@ -1,4 +1,4 @@
-// communicationthread.h
+ï»¿// communicationthread.h
 #ifndef COMMUNICATIONTHREAD_H
 #define COMMUNICATIONTHREAD_H
 
@@ -15,7 +15,7 @@
 class CommHandler;
 class CommunicationThread : public QThread
 {
-    Q_OBJECT
+    Q_OBJECT 
 
 public:
     explicit CommunicationThread(QObject* parent = nullptr);
@@ -23,17 +23,17 @@ public:
 
     void setDeviceId(int id);
 
-    //Á¬½ÓÖÁÉè±¸£¬²¢Æô¶¯ÊÕ·¢Ïß³Ì£¬¿ªÊ¼Í¨Ñ¶
+    //è¿æ¥è‡³è®¾å¤‡ï¼Œå¹¶å¯åŠ¨æ”¶å‘çº¿ç¨‹ï¼Œå¼€å§‹é€šè®¯
     void init(const QString& deviceAddress, quint16 port);
     /**
-     * »ñÈ¡Í¨Ñ¶Ïß³Ì¸ºÔğµÄÉè±¸IP
+     * è·å–é€šè®¯çº¿ç¨‹è´Ÿè´£çš„è®¾å¤‡IP
      * 
      * @return 
      */
     QString ip();
 
     /**
-     * Ì×½Ó×ÖĞ´Èëº¯Êı
+     * å¥—æ¥å­—å†™å…¥å‡½æ•°
      *
      * @param data
      * @return
@@ -51,61 +51,61 @@ public slots:
     void useRealTime(bool use);
 private:
     /**
-     * »ºÂı·¢ËÍÊµÊ±Êı¾İ.
+     * ç¼“æ…¢å‘é€å®æ—¶æ•°æ®.
      * 
      * \param obj
      */
     void looseFireRealData(const QJsonObject& obj);
 
     unsigned __int64 lastSendRealData_;
-    //´¦ÀíÍ¨Ñ¶¿ØÖÆÏûÏ¢
+    //å¤„ç†é€šè®¯æ§åˆ¶æ¶ˆæ¯
     void handleCommCtrlMsg(const QJsonObject& obj);
 
-    //¸ü»»ipµØÖ·
+    //æ›´æ¢ipåœ°å€
     void setDeviceAddress(const QString& ip);
     /**
-     * Ïß³ÌÖ´ĞĞº¯Êı.
+     * çº¿ç¨‹æ‰§è¡Œå‡½æ•°.
      *
      */
     void run() override;
     /**
-     * ¶¨Ê±Æ÷Ö´ĞĞº¯Êı.
+     * å®šæ—¶å™¨æ‰§è¡Œå‡½æ•°.
      */
     void timerFunc();
 
     /**
-     * ÆÕÍ¨µÄ¶¨Ê±Æ÷ÈÎÎñ.
-     * ĞèÒª²»¶ÏÓëÉè±¸Í¨Ñ¶µÄÈÕ³£Í¨Ñ¶ÈÎÎñ
+     * æ™®é€šçš„å®šæ—¶å™¨ä»»åŠ¡.
+     * éœ€è¦ä¸æ–­ä¸è®¾å¤‡é€šè®¯çš„æ—¥å¸¸é€šè®¯ä»»åŠ¡
      * 
      */
     void normalTimerFunc();
    
     /**
-     * ÆäËû¶¨Ê±Æ÷ÈÎÎñ£¬Ä¿Ç°ÓÃÓÚÈí¼şÖ÷¶¯ÏÂ·¢µÄÍ¨Ñ¶ÈÎÎñ.
+     * å…¶ä»–å®šæ—¶å™¨ä»»åŠ¡ï¼Œç›®å‰ç”¨äºè½¯ä»¶ä¸»åŠ¨ä¸‹å‘çš„é€šè®¯ä»»åŠ¡.
      * 
      */
     void otherTimerFunc();
 
     /**
-     * ´Ó×ÊÁÏÇø»ñÈ¡Êı¾İ,ÆÛÆ­Êı¾İ´¦ÀíÏß³Ì.
+     * ä»èµ„æ–™åŒºè·å–æ•°æ®,æ¬ºéª—æ•°æ®å¤„ç†çº¿ç¨‹.
      * 
      * \param info
      */
     void fakeData(const U65RawData&info);
 
     /**
-     * »ñÈ¡×ÊÁÏÇøÊı¾İ.
+     * è·å–èµ„æ–™åŒºæ•°æ®.
      * 
      * \param info
      */
     bool readRecData(const U65RawData& info, U65RawData&fakeInfo,bool readRec2 = false);
 signals:
     /**
-     * ÓÉÖ÷Ïß³Ìµ÷ÓÃ£¬Í¨ÖªÏß³ÌÆô¶¯¶¨Ê±Æ÷.
+     * ç”±ä¸»çº¿ç¨‹è°ƒç”¨ï¼Œé€šçŸ¥çº¿ç¨‹å¯åŠ¨å®šæ—¶å™¨.
      */
     void startTimer();
     /**
-   * ÓÉÖ÷Ïß³Ìµ÷ÓÃ£¬Í¨ÖªÏß³ÌÍ£Ö¹¶¨Ê±Æ÷.
+   * ç”±ä¸»çº¿ç¨‹è°ƒç”¨ï¼Œé€šçŸ¥çº¿ç¨‹åœæ­¢å®šæ—¶å™¨.
    */
     void stopTimer();
 
@@ -116,26 +116,26 @@ private:
     void log(const QString& str);
     void log(const QString& ip, const QString& str);
 private:
-    QMap<QString, CommHandler*> commHandlers_;//Éè±¸Í¨Ñ¶Ğ­Òé´¦ÀíÆ÷
+    QMap<QString, CommHandler*> commHandlers_;//è®¾å¤‡é€šè®¯åè®®å¤„ç†å™¨
 
     quint16 m_port;
     QString m_deviceAddress;
     QTcpSocket* m_socket;
-    bool powerOn_;//ÊÇ·ñĞèÒª¸úÉè±¸Í¨Ñ¶£¬Èç¹ûÓÃ»§µã»÷ÁË¶Ï¿ªÁ¬½Ó£¬¾Í²»Í¨Ñ¶£¬Ä¬ÈÏÊÇtrue
+    bool powerOn_;//æ˜¯å¦éœ€è¦è·Ÿè®¾å¤‡é€šè®¯ï¼Œå¦‚æœç”¨æˆ·ç‚¹å‡»äº†æ–­å¼€è¿æ¥ï¼Œå°±ä¸é€šè®¯ï¼Œé»˜è®¤æ˜¯true
 
-    QTimer* m_sendTimer;//Êı¾İ·¢ËÍ¶¨Ê±Æ÷
+    QTimer* m_sendTimer;//æ•°æ®å‘é€å®šæ—¶å™¨
 
 
-    QQueue<QJsonObject> writeQueue_;//Ö÷¶¯·¢ËÍÊı¾İµÄ¶ÓÁĞ£¬´ı·¢ËÍ×´Ì¬
-    QMutex writeMtx_;//±£»¤·¢ËÍ¶ÓÁĞ
+    QQueue<QJsonObject> writeQueue_;//ä¸»åŠ¨å‘é€æ•°æ®çš„é˜Ÿåˆ—ï¼Œå¾…å‘é€çŠ¶æ€
+    QMutex writeMtx_;//ä¿æŠ¤å‘é€é˜Ÿåˆ—
 
-    QQueue<QJsonObject> commCtrlQueue_;//ÏµÍ³´¦ÀíÏûÏ¢
-    QMutex ctrlMtx_;//±£»¤ÏµÍ³¶ÓÁĞ
+    QQueue<QJsonObject> commCtrlQueue_;//ç³»ç»Ÿå¤„ç†æ¶ˆæ¯
+    QMutex ctrlMtx_;//ä¿æŠ¤ç³»ç»Ÿé˜Ÿåˆ—
 
-    int recNum1_;//Èí¼şÒÑ¾­¼ÇÂ¼µÄÊı¾İ
-    int recNum2_;//Èí¼şÒÑ¾­¼ÇÂ¼µÄÊı¾İ
+    int recNum1_;//è½¯ä»¶å·²ç»è®°å½•çš„æ•°æ®
+    int recNum2_;//è½¯ä»¶å·²ç»è®°å½•çš„æ•°æ®
 
-    bool useRealTime_;//ÊÇ·ñÊ¹ÓÃÊµÊ±Êı¾İ
+    bool useRealTime_;//æ˜¯å¦ä½¿ç”¨å®æ—¶æ•°æ®
 
     int deviceId_;
 

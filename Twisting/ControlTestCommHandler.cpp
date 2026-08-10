@@ -61,7 +61,7 @@ bool ControlTestCommHandler::commFunc(CommunicationThread* socket, QJsonObject& 
             return true;
         }
 
-        //д��PC KEY 0B���������
+        //写入PC KEY 0B指令数据
 		QByteArray buffer; 
 		buffer.fill(0x00, 528);
 		packPC_KEY(0x0B, buffer);
@@ -150,7 +150,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     }
     QJsonObject configForm = recvObj["configForm"].toObject();
     QJsonObject testModeConfig = recvObj["testModeConfig"].toObject();
-    //��configFormת���ַ���
+    //把configForm转换成字符串
 	qDebug() << "configForm:" << QJsonDocument(configForm).toJson(QJsonDocument::Indented);
 	qDebug() << "testModeConfig:" << QJsonDocument(testModeConfig).toJson(QJsonDocument::Indented);
 
@@ -311,7 +311,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         return false;
     }
 
-    // ͨ�ò������
+    // 通用参数
     //initialMode
 	if (configForm["initialMode"].isNull())
 	{
@@ -334,15 +334,15 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 	}
 	QString unit = configForm["unit"].toString();
 	//zeroMode
-     //zeroMode��һ����������
-    // ȡ��һ������
+      //zeroMode是一个数组参数
+    // 取出数组
     QJsonArray zeroModeArray = configForm["zeroMode"].toArray();
     if (zeroModeArray.isEmpty())
     {
         qDebug() << "zeroMode array is empty";
         return false;
     }
-    //����ȡ�����ж��󣬶������ַ���
+    //循环取出数组中的对象，并判断对象是否为字符串
     QStringList zeroModeList;
     for (const QJsonValue& value : zeroModeArray)
     {
@@ -361,42 +361,42 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 
 
 
-    // ��ʼ��
+    // 起始点
     if (configForm["startPoint"].isNull())
     {
         qDebug() << "startPoint error";
         return false;
     }
     double startPoint = configForm["startPoint"].toDouble();
-    // ������
+    // 结束条件
     if (configForm["endCondition"].isNull())
     {
         qDebug() << "endCondition error";
         return false;
     }
     double endCondition = configForm["endCondition"].toDouble();
-    // ���Ť��
+    // 最大扭矩
     if (configForm["maxTorque"].isNull())
     {
         qDebug() << "maxTorque error";
         return false;
     }
     double maxTorque = configForm["maxTorque"].toDouble();
-    // ���Ƕ�
+    // 最大角度
     if (configForm["maxAngle"].isNull())
     {
         qDebug() << "maxAngle error";
         return false;
     }
     double maxAngle = configForm["maxAngle"].toDouble();
-    // �������ж�
+    // 断裂敏感度
     if (configForm["breakSensitivity"].isNull())
     {
         qDebug() << "breakSensitivity error";
         return false;
     }
     double breakSensitivity = configForm["breakSensitivity"].toDouble();
-    // �ƶ��ٶ�
+    // 移动速度
     if (configForm["moveSpeed"].isNull())
     {
         qDebug() << "moveSpeed error";
@@ -419,7 +419,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 	}
 	QString adDirection = configForm["adDirection"].toString();
 
-	//�Ƿ��λ
+	//是否复位
 	if (configForm["specimenReturn"].isNull())
 	{
 		qDebug() << "specimenReturn error";
@@ -427,9 +427,9 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 	}
 	int specimenReturn = configForm["specimenReturn"].toInt();
 
-    //д��ͨ�ò���    
+    //写入通用参数
 
-    //����ģʽ
+    //测试模式
 	/*QByteArray buffer;
 	buffer.fill(0x00, 528);
 	setCmd(E_Mode::Write, buffer);
@@ -464,31 +464,31 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 
     int16_t mi_Add = 0;
     int zeroType = 0;
-    //����zeroModeList
+    //遍历zeroModeList
     for (int i = 0; i < zeroModeList.length(); i++)
     {
         if (zeroModeList[i] == "torqueZero")
         {
-            //mi_Add�ĵ�4��bitд��1
+            //mi_Add的第4个bit写入1
             mi_Add |= 0x10;
             zeroType += 1;
 
-            //��SYNC_ZERO_FLAG��BIT 2 д�� 1
+            //把SYNC_ZERO_FLAG的BIT 2 写入 1
 			SYNC_ZERO_FLAG |= 0x04;
 
 
         }
         else if (zeroModeList[i] == "angleZero")
         {
-            //mi_Add�ĵ�1��2��bitд��1
+            //mi_Add的第1 2个bit写入1
             mi_Add |= 0x03;
             zeroType += 2;
 
-			//��SYNC_ZERO_FLAG��BIT 4 д�� 1
+			//把SYNC_ZERO_FLAG的BIT 4 写入 1
 			SYNC_ZERO_FLAG |= 0x10;
         }
         else if (zeroModeList[i] == "angleZeroAndTorqueZero") {
-            //mi_Add�ĵ�3��bitд��1
+            //mi_Add的第3个bit写入1
 
             mi_Add |= 0x08;
             zeroType += 3;
@@ -507,7 +507,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 
     if(zeroType > 0)
     {
-        //ABS����
+        //ABS清零
         QByteArray buffer;
 
         buffer.clear();
@@ -531,30 +531,30 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 		err = "readInt16 error " + socket->socketError();
 		return false;
     }
-    // ���û�λģʽ��0~5��������Ի�������ֵ�� 2 = ��ͣ���λ��3 = �ؘO�� ��
-    uint8_t returnMode = 0;  // �A�O����λ
+    // 根据复位模式(0~5)，决定试样回位值：2 = 暂停回位、3 = 极限位 等
+    uint8_t returnMode = 0;  // 默认不复位
     if (specimenReturn == 1) {
-        returnMode = 1;  // ���̻�λ
+        returnMode = 1;  // 试样复位
     }
 
-	qDebug() << "0A7Cд��ǰ" << mi_PC_TEST_3;
-    // ��� Bit4~7�����O��
+	qDebug() << "0A7C写入前" << mi_PC_TEST_3;
+    // 修改 Bit4~7为复位设置
     mi_PC_TEST_3 = (mi_PC_TEST_3 & ~0xF0) | ((returnMode & 0x0F) << 4);
 
-    //��4��bit��Ϊ1
+    //把4个bit设置为1
     //mi_PC_TEST_3 |= 0x10;
 
-	qDebug() << "0A7Cд���" << mi_PC_TEST_3;
-    //д���λ
+	qDebug() << "0A7C写入后" << mi_PC_TEST_3;
+    //写入复位
     if (!writeInt16(socket, 0x0A7C, mi_PC_TEST_3, err)) {
 		err = "writeInt16 error " + socket->socketError();
 		return false;
     }
 
 
-    ////���ò��Ժ�Ķ���
+    ////设置测试后的复位值
     //int16_t PC_TEST_3 = 0;
-    ////��4��bit��Ϊ1
+    ////把4个bit设置为1
     //PC_TEST_3 |= 0x10;
     //if (!writeInt16(socket, 0x0A7C, PC_TEST_3, err)) {
     //    err = "writeInt16 error " + socket->socketError();
@@ -569,45 +569,45 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 		return false;
 	}
    
-	//д���ʼ����ֵ
+	//写入初始负荷值
 	if (!writeFloat(socket, 0x0a2c, initialLoadValue, err))
 		return false;
 
     qDebug() << "startPoint" << startPoint;
-    //д����ʼ��
+    //写入起始点
 	if (!writeFloat(socket, 0x0A44, startPoint, err))
 		return false;
 
     qDebug() << "startPoint" << endCondition;
-    //д�������
+    //写入结束条件
 	if (!writeFloat(socket, 0x0A48, endCondition, err))
 		return false;
 
-	//д�����Ť��
+	//写入最大扭矩
 	if (!writeFloat(socket, 0x0A60, maxTorque, err))
 		return false;
-	//д�����Ƕ�
+	//写入最大角度
 	if (!writeFloat(socket, 0x0A64, maxAngle, err))
 		return false;
-	//д��������ж�
+	//写入断裂敏感度
 	if (!writeFloat(socket, 0x0A30, breakSensitivity, err))
 		return false;
-    //д�붨��
+    //写入定速
 	if (!writeInt16(socket, 0x1402, 0x0000, err))
 		return false;
-    //д���ƶ��ٶ�
+    //写入移动速度
     if (!writeFloat(socket, 0x1108, moveSpeed, err))
         return false;
 
 
     int16_t mi_PC_TEST_2 = 0;
-    //д�뵥λ
+    //写入单位
     if (unit == "N") {
-        //��5��bit��Ϊ0
+        //把5个bit设置为0
         mi_PC_TEST_2 &= 0xDF;
     }
     else if (unit == "mm") {
-        //��5��bitд��1
+        //把5个bit写入1
         mi_PC_TEST_2 |= 0x20;
     }
     else {
@@ -620,16 +620,16 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     {
         if (zeroModeList[i] == "torqueZero")
         {
-            //��0��bitд��1
+            //把第0个bit写入1
             mi_PC_TEST_2 |= 0x03;
         }
         else if (zeroModeList[i] == "angleZero")
         {
-            //��1��bitд��1
+            //把第1个bit写入1
             mi_PC_TEST_2 |= 0x04;
         }
         else if (zeroModeList[i] == "angleZeroAndTorqueZero") {
-            //��1 2��bitд��1
+            //把第1 2个bit写入1
 
             mi_PC_TEST_2 |= 0x07;
         }
@@ -639,7 +639,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     if (!writeInt16(socket, 0x0A7A, mi_PC_TEST_2, err))
         return false;
 
-    //ָ���������ļ�¼��Դ
+    //指定测试的记录来源
 	int16_t REC_SOURCE = 0x0000;
 
 	REC_SOURCE |= 0x0F;
@@ -647,8 +647,8 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 		err = "writeInt16 error " + socket->socketError();
 		return false;
     }
-	//д�����Ƶ��
-	//int32_t mi_SampleRate = 1;//5K�Ĳ�����
+	//写入采样频率
+	//int32_t mi_SampleRate = 1;//5K的采样频率
  //   if (!writeInt32(socket, 0x080c, mi_SampleRate, err)) {
  //       err = "writeInt32 error " + socket->socketError();
  //       return false;
@@ -676,36 +676,36 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 
     QVector< DF_SET>  dfSets;
     // TODO
-    // �ѷ����趨����DF SET�����趨��
+    // 把方法设定到DF SET中设定好
     if (mode == "destructive") {
-        //д���ƶ��ٶ�
+        //写入扭转速度
         if (!writeFloat(socket, 0x1408, torsionSpeed, err))
             return false;
 
-        //д����������
+        //写入最大扭矩
         if (!writeFloat(socket, 0x0A58, (float)maxTorque, err))
             return false;
 
-        //д��Ƕ�����
+        //写入最大角度
         if (!writeFloat(socket, 0x0A5C, (float)maxAngle, err))
             return false;
 
-        //д���ƶ��ٶ�
+        //写入移动速度
         if (!writeFloat(socket, 0x1108, moveSpeed, err))
             return false;
 
-        //����Ҫд��0A10
+        //不需要写入0A10
         if (0) {
             if (direction == "Forward") {
                 int16_t value = 0;
                 if (!readInt16(socket, 0x0a10, value, err)) {
                     return false;
                 }
-                //��BIT 0 ����Ϊ0
+                //把BIT 0 设置为0
                 value &= ~(1 << 0);
-                //��BIT 9 ����Ϊ1
+                //把BIT 9 设置为1
                 value |= (1 << 9);
-                //��BIT 10����Ϊ0
+                //把BIT 10设置为0
                 value &= ~(1 << 10);
 
                 if (!writeInt16(socket, 0x0a10, value, err))
@@ -713,18 +713,18 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
                 if (!readInt16(socket, 0x0a10, value, err)) {
                     return false;
                 }
-                //�ض����һ��
-                //���BIT 0�Ƿ�Ϊ0
+                //重新读一次
+                //检查BIT 0是否为0
                 if ((value & (1 << 0)) != 0) {
                     err = "BIT 0 is not set";
                     return false;
                 }
-                //���BIT 9�Ƿ�Ϊ1
+                //检查BIT 9是否为1
                 if ((value & (1 << 9)) == 0) {
                     err = "BIT 9 is not set";
                     return false;
                 }
-                //���BIT 10�Ƿ�Ϊ0
+                //检查BIT 10是否为0
                 if ((value & (1 << 10)) != 0) {
                     err = "BIT 10 is not set";
                     return false;
@@ -737,17 +737,17 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
                     if (!readInt16(socket, 0x0a16, value, err)) {
                         return false;
                     }
-                    //��BIT 1 ����Ϊ1
+                    //把BIT 1 设置为1
                     value |= (1 << 1);
 
                     if (!writeInt16(socket, 0x0a16, value, err))
                         return false;
 
-                    //���ض�һ��
+                    //重新读一次
                     if (!readInt16(socket, 0x0a16, value, err)) {
                         return false;
                     }
-                    //���BIT 1�Ƿ�Ϊ1
+                    //检查BIT 1是否为1
                     if ((value & (1 << 1)) == 0) {
                         err = "BIT 1 is not set";
                         return false;
@@ -761,31 +761,31 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
                     return false;
                 }
 
-                //��BIT 0 ����Ϊ1
+                //把BIT 0 设置为1
                 value |= (1 << 0);
-                //��BIT 9 ����Ϊ1
+                //把BIT 9 设置为1
                 value |= (1 << 9);
-                //��BIT 10����Ϊ1
+                //把BIT 10设置为1
                 value |= (1 << 10);
 
                 if (!writeInt16(socket, 0x0a10, value, err))
                     return false;
 
-                //�ض�ȷ��һ��
+                //重新确认一次
                 if (!readInt16(socket, 0x0a10, value, err)) {
                     return false;
                 }
-                //���BIT 0�Ƿ�Ϊ1
+                //检查BIT 0是否为1
                 if ((value & (1 << 0)) == 0) {
                     err = "BIT 0 is not set";
                     return false;
                 }
-                //���BIT 9�Ƿ�Ϊ1
+                //检查BIT 9是否为1
                 if ((value & (1 << 9)) == 0) {
                     err = "BIT 9 is not set";
                     return false;
                 }
-                //���BIT 10�Ƿ�Ϊ1
+                //检查BIT 10是否为1
                 if ((value & (1 << 10)) == 0) {
                     err = "BIT 10 is not set";
                     return false;
@@ -797,21 +797,21 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
                     if (!readInt16(socket, 0x0a16, value, err)) {
                         return false;
                     }
-                    //��BIT 1 ȡ��
+                    //把BIT 1 取反
                     value ^= (1 << 1);
-                    //��BIT 9 ȡ��
+                    //把BIT 9 取反
                     value ^= (1 << 9);
-                    ////��BIT 1 ����Ϊ0
+                    ////把BIT 1 设置为0
                     //value &= ~(1 << 1);
 
                     if (!writeInt16(socket, 0x0a16, value, err))
                         return false;
 
-                    //���ض�һ��
+                    //重新读一次
                     if (!readInt16(socket, 0x0a16, value, err)) {
                         return false;
                     }
-                    ////���BIT 1�Ƿ�Ϊ0
+                    ////检查BIT 1是否为0
            //         if ((value & (1 << 1)) != 0) {
            //             err = "BIT 1 is not set";
            //             return false;
@@ -828,19 +828,19 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             return false;
         }
         if (adDirection == "Forward") {
-			//��BIT 1 ����Ϊ1
+			//把BIT 1 设置为1
 			value |= (1 << 1);
 		}
         else  if (adDirection == "Backward") {
-			//��BIT 1 ����Ϊ0
+			//把BIT 1 设置为0
 			value &= ~(1 << 1);
         }
         if (direction == "Forward") {
-            //��BIT 9 ����Ϊ1
+            //把BIT 9 设置为1
             value |= (1 << 9);
         }
 		else if (direction == "Backward") {
-            //��BIT 9 ����Ϊ0
+            //把BIT 9 设置为0
 			value &= ~(1 << 9);
 		}
 		if (!writeInt16(socket, 0x0a16, value, err))
@@ -848,19 +848,19 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     }
     else if (mode == "static") {
 
-        //д����������
+        //写入最大扭矩
         if (!writeFloat(socket, 0x0A58, (float)maxTorque, err))
             return false;
 
-        //д��Ƕ�����
+        //写入最大角度
         if (!writeFloat(socket, 0x0A5C, (float)maxAngle, err))
             return false;
 
 
-        //д���ƶ��ٶ�
+        //写入扭转速度
         if (!writeFloat(socket, 0x1C08, torsionSpeed, err))
             return false;
-        //����
+        //保压
         {
             DF_SET df_set;
             if (staticMode == "torque")
@@ -885,7 +885,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             df_set.DF_HZ = 10;
 
 
-            //����ǵ�һ�����裬��λ��0mm
+            //这是第一个步骤，保位为0mm
             dfSets.push_back(df_set);
         }
 
@@ -930,10 +930,10 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         }
 
         df_set.DF_HZ = torsionSpeed;
-        //��һ������
+        //第一个测试段
 		dfSets.push_back(df_set);
 
-        //�����ӳ�
+        //添加延迟
         if (delayTime != 0) {
             DF_SET df_set_delay;
             df_set_delay.IR_TYPE = 3;
@@ -941,7 +941,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             dfSets.push_back(df_set_delay);
         }
        
-        //����
+        //保压
         {
             DF_SET df_set;
             if (staticMode == "torque")
@@ -966,12 +966,12 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             df_set.DF_HZ = torsionSpeed;
 
 
-            //����ǵ�һ�����裬��λ��0mm
+            //这是第一个步骤，保位为0mm
             dfSets.push_back(df_set);
         }
 
 
-        //�����ӳ�
+        //添加延迟
         if (delayTime != 0) {
             DF_SET df_set_delay;
             df_set_delay.IR_TYPE = 3;
@@ -979,7 +979,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             dfSets.push_back(df_set_delay);
         }
 
-		//�ڶ�������
+		//第二个测试段
 		DF_SET df_set_second;
         df_set_second = df_set;
 
@@ -993,7 +993,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         }  
         dfSets.push_back(df_set_second);
 
-        //��ʱ
+        //延时
         if (delayTime != 0) {
             DF_SET df_set_delay;
             df_set_delay.IR_TYPE = 3;
@@ -1001,7 +1001,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             dfSets.push_back(df_set_delay);
         }
 
-        //����
+        //保压
         {
             DF_SET df_set;
             if (staticMode == "torque")
@@ -1026,12 +1026,12 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             df_set.DF_HZ = torsionSpeed;
 
 
-            //����ǵ�һ�����裬��λ��0mm
+            //这是第一个步骤，保位为0mm
             dfSets.push_back(df_set);
         }
 
 
-        //�����ӳ�
+        //添加延迟
         if (delayTime != 0) {
             DF_SET df_set_delay;
             df_set_delay.IR_TYPE = 3;
@@ -1058,7 +1058,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             df_set.DF_HZ = 30;
 
             
-            //����ǵ�һ�����裬��λ��0mm
+            //这是第一个步骤，保位为0mm
             dfSets.push_back(df_set);
         }
 
@@ -1104,15 +1104,15 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         df_set.DF_END_CYCLE = cycleCount;
         df_set.JUMP_NO = 0;
 
-        //��һ������
+        //第一个测试段
         dfSets.push_back(df_set);
 
         
     }
     /*
     *STEP#2
-    * ����������ÿ���趨��Ϣ
-    * ���һ����Ϣ��Ҫ����Ϊ0����֪��λ�������趨��Ϣ����
+    * 遍历并写入每个设定信息
+    * 最后一个信息需要设置为0，以告知位置设定信息结束
     */
     for (int i = 0; i <= dfSets.length(); i++) {
         if (i != dfSets.length()) {
@@ -1121,7 +1121,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
                 return false;
             continue;
         }
-        //д�����һ��DF SET��д���������
+        //写入最后一个DF SET，写入结束标志
         DF_SET tmp;
         tmp.mui_GroupNo = i;
         //tmp.IR_TYPE = 0;
@@ -1138,13 +1138,13 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     }
 
     /*
-    �ĵ�����:�� PC_ADD ָ���� �ӑB�M�e ���M �ᵽ ���r�@ʾ�^  	DF_SET[PC_ADD]  0X09B0
-    �ɰ�������д�����,���˴˶��߼�
+    接下来的步骤:把 PC_ADD 指针动态进到显示页  	DF_SET[PC_ADD]  0X09B0
+    完成后再重新写入，并刷新此断点结束
     */
     QByteArray buffer;
     QByteArray recvData;
 	buffer.fill(0x00, 528);
-    packPC_KEY(0x3a, 0, buffer);//�������һֱ�·������¶ȵ�ԭ��
+    packPC_KEY(0x3a, 0, buffer);//这里，不需要一直发送刷新温度的原码
     if (!socket->writeData(buffer)) {
         err = "writeData error " + socket->socketError();
         return false;
@@ -1337,7 +1337,7 @@ bool ControlTestCommHandler::setAD1_DIR(CommunicationThread* socket, QJsonObject
     if (!readInt16(socket, 0x0a16, value, err)) {
         return false;
     }
-    //��BIT 0 ����Ϊ1
+    //把BIT 0 设置为1
     int bitNumber = 0;
     if (onOrOff) {
         value |= (1 << bitNumber);
@@ -1359,7 +1359,7 @@ bool ControlTestCommHandler::setAD2_DIR(CommunicationThread* socket, QJsonObject
     if (!readInt16(socket, 0x0a16, value, err)) {
         return false;
     }
-    //��BIT 1 ����Ϊ1
+    //把BIT 1 设置为1
     int bitNumber = 1;
     if (onOrOff) {
         value |= (1 << bitNumber);
@@ -1381,7 +1381,7 @@ bool ControlTestCommHandler::setAD1_UPDN(CommunicationThread* socket, QJsonObjec
     if (!readInt16(socket, 0x0a16, value, err)) {
         return false;
     }
-    //��BIT 8 ����Ϊ1
+    //把BIT 8 设置为1
     int bitNumber = 8;
     if (onOrOff) {
         value |= (1 << bitNumber);
@@ -1403,7 +1403,7 @@ bool ControlTestCommHandler::setAD2_UPDN(CommunicationThread* socket, QJsonObjec
     if (!readInt16(socket, 0x0a16, value, err)) {
         return false;
     }
-    //��BIT 9 ����Ϊ1
+    //把BIT 9 设置为1
     int bitNumber = 9;
     if (onOrOff) {
         value |= (1 << bitNumber);
@@ -1418,7 +1418,7 @@ bool ControlTestCommHandler::setAD2_UPDN(CommunicationThread* socket, QJsonObjec
     return true;
 }
 
-//д��X DIR
+//写入X DIR
 bool ControlTestCommHandler::setXDIR(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 
     bool onOrOff = obj["on"].toBool();
@@ -1428,7 +1428,7 @@ bool ControlTestCommHandler::setXDIR(CommunicationThread* socket, QJsonObject& o
     if (!readInt16(socket, 0x0a10, value, err)) {
         return false;
     }
-    //��BIT 9 ����Ϊ1
+    //把BIT 9 设置为1
     int bitNumber = 9;
     if (onOrOff) {
         value |= (1 << bitNumber);
@@ -1443,14 +1443,14 @@ bool ControlTestCommHandler::setXDIR(CommunicationThread* socket, QJsonObject& o
     return true;
 }
 
-//д��YZ DIR
+//写入YZ DIR
 bool ControlTestCommHandler::setYZDIR(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 	bool onOrOff = obj["on"].toBool();
 	int16_t value = 0;
 	if (!readInt16(socket, 0x0a10, value, err)) {
 		return false;
 	}
-	//��BIT 10 ����Ϊ1
+	//把BIT 10 设置为1
 	int bitNumber = 10;
 	if (onOrOff) {
 		value |= (1 << bitNumber);
@@ -1464,14 +1464,14 @@ bool ControlTestCommHandler::setYZDIR(CommunicationThread* socket, QJsonObject& 
 }
 
 
-//д�� XGAIN
+//写入 XGAIN
 bool ControlTestCommHandler::setXGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err) {
     float gain = obj["GAIN"].toDouble();
     if (!writeFloat(socket, 0x0a70, gain, err))
         return false;
     return true;
 }
-//д��YZ GAIN
+//写入YZ GAIN
 bool ControlTestCommHandler::setYZGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err) {
     float gain = obj["GAIN"].toDouble();
     if (!writeFloat(socket, 0x0a74, gain, err))
@@ -1667,7 +1667,7 @@ bool ControlTestCommHandler::spin(CommunicationThread* socket, QJsonObject& obj,
         }
 
         /**
-         * �ж�������ȷ��
+         * 判断数据是否正确
          *
          */
         if ((recvData[4] & 0xff) != 0x52 || (recvData[5] & 0xff) != 0x44 || (recvData[6] & 0xff) != 0x04) {
@@ -1727,22 +1727,22 @@ bool ControlTestCommHandler::reSpin(CommunicationThread* socket, QJsonObject& ob
 	return true;
 }
 
-//��������ǰ��׼�����ض���ǰ�Ƕȣ�0x0900��ƫ��0x34������ַ0x0934��float����
-//���趨�ǶȱȽϣ�ƫС�� moveup(spin)��ƫ���� movedown(reSpin)��
-//ÿ��ֻ�ƶ�һ��㣬��ѭ��"�ƶ�->�ض�->����"��ֱ�� |ʵ��-�趨| <= ��ֵ
+//测试前的准备：读取当前角度（0x0900的偏移0x34，即地址0x0934，为float类型）
+//与设定角度比较：偏小则 moveup(spin)，偏大则 movedown(reSpin)
+//每次只移动一点，并循环"移动->读取->判断"直到 |实际-设定| <= 阈值
 bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 	double targetAngle = obj.contains("targetAngle") ? obj["targetAngle"].toDouble() : 0.0143;// obj["targetAngle"].toDouble();
 	double threshold = obj.contains("threshold") ? obj["threshold"].toDouble() : 0.00005;
-	const int maxIterations = 5000; //��ȫ���ޣ���ֹ�쳣ʱ��ѭ��
+	const int maxIterations = 5000; //安全限制，防止异常时死循环
 
-	//�ƶ��ٶ�����Ӧ��Զ���趨�Ƕ�ʱ�ø���(500)���ӽ�ʱ���Խ��� minSpeed
+	//移动速度应该远离设定角度时用更快(500)，接近时用更小 minSpeed
 	const double maxSpeed = 400.0;
 	const double minSpeed = 10.0;
-	double firstAbsDiff = -1.0; //�״λض���|diff|����Ϊ���ٻ�׼
-	bool converged = false; //�Ƿ��Ѵﵽ��ֵ
+	double firstAbsDiff = -1.0; //首次返回的|diff|，作为减速基准
+	bool converged = false; //是否已达到阈值
 
 	for (int i = 0; i < maxIterations; i++) {
-		//��ȡ��ǰ�Ƕȣ�4�ֽڣ���ַ 0x0934��0x0900 + 0x34������ float ����
+		//读取当前角度（4字节，地址 0x0934，0x0900 + 0x34）为 float 类型
 		int32_t Hex32 = 0;
 		if (!readInt32(socket, 0x0934, Hex32, err)) {
 			break;
@@ -1753,27 +1753,27 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 		double diff = currentAngle - targetAngle;
 		double absDiff = qAbs(diff);
 		if (absDiff <= threshold) {
-			converged = true; //�ﵽ��ֵ��ֹͣ
+			converged = true; //达到阈值，停止
 			break;
 		}
 
-		//�״μ�¼��׼|diff|�����ڰ����������ٶ�
+		//首次记录基准|diff|，用于按比例减速
 		if (firstAbsDiff < 0) {
 			firstAbsDiff = absDiff;
 		}
-		//�ٶ���ӽ��̶����Լ�С��Զ��ʱ maxSpeed���ӽ�ʱ���� minSpeed
+		//按接近程度逐渐减小速度，远时用 maxSpeed，接近时用 minSpeed
 		double ratio = firstAbsDiff > 0 ? (absDiff / firstAbsDiff) : 1.0;
 		double speed = minSpeed + (maxSpeed - minSpeed) * ratio;
 		if (speed > maxSpeed) speed = maxSpeed;
 		if (speed < minSpeed) speed = minSpeed;
 		qDebug() << "prepareTest absDiff:" << absDiff << "speed:" << speed;
 
-		//д���ƶ��ٶ�
+		//写入移动速度
 		if (!writeFloat(socket, 0x1108, static_cast<float>(speed), err)) {
 			break;
 		}
 
-		//��ǰ�Ƕȱ��趨�Ƕ�С -> moveup(spin)������ -> movedown(reSpin)
+		//当前角度比设定角度小 -> moveup(spin)，偏大 -> movedown(reSpin)
 		QJsonObject dummy;
 		bool moveOk = false;
 		if (diff < 0) {
@@ -1786,7 +1786,7 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 			break;
 		}
 
-		QThread::msleep(500); //�ȴ�����ƶ�һС�κ��ٻض�
+		QThread::msleep(500); //等待电机移动一小段后再读取
 	}
 
 	if (!converged && err.isEmpty()) {
@@ -1794,9 +1794,9 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 	}
 
     QJsonObject dummy;
-	stop(socket, dummy, err); //ֹͣ�ƶ�����������ƶ�
+	stop(socket, dummy, err); //停止移动，防止电机继续移动
 
-	//�ӿڽ�����ָ��ƶ��ٶȵ�500��ʧ�ܲ��������д���
+	//接口结束时恢复移动速度到500，失败不覆盖已有错误写入
 	QString restoreErr;
 	if (!writeFloat(socket, 0x1108, 500.0f, restoreErr) && err.isEmpty()) {
 		err = restoreErr;
@@ -1805,7 +1805,7 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 	return converged;
 }
 
-//�г�
+//夹持
 bool ControlTestCommHandler::grip(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 	QByteArray buffer;
 	packPC_KEY(0x107, 0x01, buffer);
@@ -1825,7 +1825,7 @@ bool ControlTestCommHandler::grip(CommunicationThread* socket, QJsonObject& obj,
 	return true;
 }
 
-//�ɿ�
+//松开
 bool ControlTestCommHandler::release(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 	QByteArray buffer;
 	packPC_KEY(0x107, 0x00, buffer);
