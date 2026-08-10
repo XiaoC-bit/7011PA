@@ -1149,6 +1149,10 @@ bool MethodHandler::handleWsMsg(QJsonObject &recvObj, QString &response)
     {
         return deleteData(db, recvObj, response);
     }
+    else if (type == "updateModbusSerialPort")
+    {
+        return updateModbusSerialPort(db, recvObj, response);
+    }
     else
     {
         return false;
@@ -1174,5 +1178,49 @@ bool MethodHandler::fetchSerialPorts(const QJsonObject& recvObj, QString& respon
 
     QJsonDocument jsonDoc(jsonObj);
     response = jsonDoc.toJson();
+    return true;
+}
+
+bool MethodHandler::updateModbusSerialPort(const QSqlDatabase& db, QJsonObject& recvObj, QString& response)
+{
+    QString modbusSerialPort = recvObj.contains("modbusSerialPort") ? recvObj["modbusSerialPort"].toString() : "";
+
+    QString strSql = QString("select id from method_config where is_current = 1");
+    QSqlQuery query(db);
+    if (!query.exec(strSql))
+    {
+        qDebug() << "Failed to fetch data:";
+        qDebug() << query.lastError().text();
+        return false;
+    }
+    int methodId = 0;
+    if (query.next())
+    {
+        methodId = query.value("id").toInt();
+    }
+
+    strSql = QString("UPDATE method_config SET modbus_serial_port = '%1' \
+        where id = %2\
+        ")
+        .arg(modbusSerialPort)
+        .arg(methodId)
+        ;
+
+    if (!query.exec(strSql))
+    {
+        qDebug() << "Failed to fetch data:";
+        qDebug() << query.lastError().text();
+        return false;
+    }
+
+
+
+    QJsonObject jsonObj;
+    jsonObj["__channel"] = channel_ + "-modifyData";
+    jsonObj["status"] = "success";
+    QJsonDocument jsonDoc(jsonObj);
+    response = jsonDoc.toJson();
+    return true;
+
     return true;
 }

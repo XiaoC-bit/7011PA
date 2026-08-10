@@ -25,4 +25,8 @@ private:
 
 	//获取系统中的串口列表
 	[[nodiscard]] bool fetchSerialPorts(const QJsonObject& obj, QString& response);
+
+	//更新当前方法的modbus串口号
+	[[nodiscard]] bool updateModbusSerialPort(const QSqlDatabase& db, QJsonObject& recvObj, QString& response);
 };
+ 
