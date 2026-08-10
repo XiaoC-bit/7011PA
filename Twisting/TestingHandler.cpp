@@ -1,4 +1,4 @@
-#include "TestingHandler.h"
+﻿#include "TestingHandler.h"
 
 #include <qdebug.h>
 #include <qsqlerror.h>
@@ -635,6 +635,13 @@ bool TestingHandler::startTest(const QSqlDatabase& configDb, const QSqlDatabase&
     }
     double moveSpeed = configForm["moveSpeed"].toDouble();
 
+    QString modbusSerialPort = configForm["modbusSerialPort"].toString();
+    if (modbusSerialPort.isEmpty())
+    {
+        qDebug() << "modbusSerialPort error";
+        return false;
+    }
+
     QString strSql = QString("select id from method_config where is_current = 1");
     QSqlQuery configQuery(configDb);
     QSqlQuery testQuery(testDb);
@@ -685,9 +692,11 @@ bool TestingHandler::startTest(const QSqlDatabase& configDb, const QSqlDatabase&
     int lastId = -1;
     if (testQuery.next()) {
         lastId = testQuery.value(0).toInt();//ID �������һ�β�������������id
-    }
+    } 
 
     recvObj["__channel"] = "control-message";
+    recvObj["modbusSerialPort"] = modbusSerialPort;
+    
 
     return true;
 }

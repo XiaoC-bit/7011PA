@@ -1,4 +1,4 @@
-#include "ControlTestCommHandler.h"
+ï»¿#include "ControlTestCommHandler.h"
 #include "DataDefine.h"
 #include <qjsonarray.h>
 #include <qjsondocument.h>
@@ -61,8 +61,8 @@ bool ControlTestCommHandler::commFunc(CommunicationThread* socket, QJsonObject& 
             return true;
         }
 
-        //Ð´ÈëPC KEY 0B£¬±£´æ²ÎÊý
-		QByteArray buffer;
+        //Ð´ï¿½ï¿½PC KEY 0Bï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		QByteArray buffer; 
 		buffer.fill(0x00, 528);
 		packPC_KEY(0x0B, buffer);
 		if (!socket->writeData(buffer)) {
@@ -150,7 +150,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     }
     QJsonObject configForm = recvObj["configForm"].toObject();
     QJsonObject testModeConfig = recvObj["testModeConfig"].toObject();
-    //°ÑconfigForm×ª³É×Ö·û´®
+    //ï¿½ï¿½configForm×ªï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½
 	qDebug() << "configForm:" << QJsonDocument(configForm).toJson(QJsonDocument::Indented);
 	qDebug() << "testModeConfig:" << QJsonDocument(testModeConfig).toJson(QJsonDocument::Indented);
 
@@ -311,7 +311,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         return false;
     }
 
-    // Í¨ÓÃ²ÎÊý¼ì²é
+    // Í¨ï¿½Ã²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     //initialMode
 	if (configForm["initialMode"].isNull())
 	{
@@ -334,15 +334,15 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 	}
 	QString unit = configForm["unit"].toString();
 	//zeroMode
-     //zeroModeÊÇÒ»¸ö¶ÔÏóÊý×é
-    // È¡µÚÒ»¸ö¶ÔÏó
+     //zeroModeï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // È¡ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     QJsonArray zeroModeArray = configForm["zeroMode"].toArray();
     if (zeroModeArray.isEmpty())
     {
         qDebug() << "zeroMode array is empty";
         return false;
     }
-    //±éÀúÈ¡³öËùÓÐ¶ÔÏó£¬¶ÔÏóÊÇ×Ö·û´®
+    //ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ó£¬¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½
     QStringList zeroModeList;
     for (const QJsonValue& value : zeroModeArray)
     {
@@ -361,42 +361,42 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 
 
 
-    // ÆðÊ¼µã
+    // ï¿½ï¿½Ê¼ï¿½ï¿½
     if (configForm["startPoint"].isNull())
     {
         qDebug() << "startPoint error";
         return false;
     }
     double startPoint = configForm["startPoint"].toDouble();
-    // ½áÊøµã
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     if (configForm["endCondition"].isNull())
     {
         qDebug() << "endCondition error";
         return false;
     }
     double endCondition = configForm["endCondition"].toDouble();
-    // ×î´óÅ¤Á¦
+    // ï¿½ï¿½ï¿½Å¤ï¿½ï¿½
     if (configForm["maxTorque"].isNull())
     {
         qDebug() << "maxTorque error";
         return false;
     }
     double maxTorque = configForm["maxTorque"].toDouble();
-    // ×î´ó½Ç¶È
+    // ï¿½ï¿½ï¿½Ç¶ï¿½
     if (configForm["maxAngle"].isNull())
     {
         qDebug() << "maxAngle error";
         return false;
     }
     double maxAngle = configForm["maxAngle"].toDouble();
-    // ¶ÏÁÑÃô¸Ð¶È
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
     if (configForm["breakSensitivity"].isNull())
     {
         qDebug() << "breakSensitivity error";
         return false;
     }
     double breakSensitivity = configForm["breakSensitivity"].toDouble();
-    // ÒÆ¶¯ËÙ¶È
+    // ï¿½Æ¶ï¿½ï¿½Ù¶ï¿½
     if (configForm["moveSpeed"].isNull())
     {
         qDebug() << "moveSpeed error";
@@ -419,7 +419,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 	}
 	QString adDirection = configForm["adDirection"].toString();
 
-	//ÊÇ·ñ»ØÎ»
+	//ï¿½Ç·ï¿½ï¿½Î»
 	if (configForm["specimenReturn"].isNull())
 	{
 		qDebug() << "specimenReturn error";
@@ -427,9 +427,9 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 	}
 	int specimenReturn = configForm["specimenReturn"].toInt();
 
-    //Ð´ÈëÍ¨ÓÃ²ÎÊý    
+    //Ð´ï¿½ï¿½Í¨ï¿½Ã²ï¿½ï¿½ï¿½    
 
-    //¹éÁãÄ£Ê½
+    //ï¿½ï¿½ï¿½ï¿½Ä£Ê½
 	/*QByteArray buffer;
 	buffer.fill(0x00, 528);
 	setCmd(E_Mode::Write, buffer);
@@ -464,31 +464,31 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 
     int16_t mi_Add = 0;
     int zeroType = 0;
-    //±éÀúzeroModeList
+    //ï¿½ï¿½ï¿½ï¿½zeroModeList
     for (int i = 0; i < zeroModeList.length(); i++)
     {
         if (zeroModeList[i] == "torqueZero")
         {
-            //mi_AddµÄµÚ4¸öbitÐ´Èë1
+            //mi_Addï¿½Äµï¿½4ï¿½ï¿½bitÐ´ï¿½ï¿½1
             mi_Add |= 0x10;
             zeroType += 1;
 
-            //½«SYNC_ZERO_FLAGµÄBIT 2 Ð´Èë 1
+            //ï¿½ï¿½SYNC_ZERO_FLAGï¿½ï¿½BIT 2 Ð´ï¿½ï¿½ 1
 			SYNC_ZERO_FLAG |= 0x04;
 
 
         }
         else if (zeroModeList[i] == "angleZero")
         {
-            //mi_AddµÄµÚ1¡¢2¸öbitÐ´Èë1
+            //mi_Addï¿½Äµï¿½1ï¿½ï¿½2ï¿½ï¿½bitÐ´ï¿½ï¿½1
             mi_Add |= 0x03;
             zeroType += 2;
 
-			//½«SYNC_ZERO_FLAGµÄBIT 4 Ð´Èë 1
+			//ï¿½ï¿½SYNC_ZERO_FLAGï¿½ï¿½BIT 4 Ð´ï¿½ï¿½ 1
 			SYNC_ZERO_FLAG |= 0x10;
         }
         else if (zeroModeList[i] == "angleZeroAndTorqueZero") {
-            //mi_AddµÄµÚ3¸öbitÐ´Èë1
+            //mi_Addï¿½Äµï¿½3ï¿½ï¿½bitÐ´ï¿½ï¿½1
 
             mi_Add |= 0x08;
             zeroType += 3;
@@ -507,7 +507,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 
     if(zeroType > 0)
     {
-        //ABS¹éÁã
+        //ABSï¿½ï¿½ï¿½ï¿½
         QByteArray buffer;
 
         buffer.clear();
@@ -531,30 +531,30 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 		err = "readInt16 error " + socket->socketError();
 		return false;
     }
-    // ÉèÖÃ»ØÎ»Ä£Ê½£¨0~5£©£¬Äã¿ÉÒÔ»»³ÉÆäËûÖµÈç 2 = •ºÍ£áá»ØÎ»£¬3 = »Ø˜OÏÞ µÈ
-    uint8_t returnMode = 0;  // îAÔO²»»ØÎ»
+    // ï¿½ï¿½ï¿½Ã»ï¿½Î»Ä£Ê½ï¿½ï¿½0~5ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ 2 = ï¿½ï¿½Í£ï¿½ï¿½ï¿½Î»ï¿½ï¿½3 = ï¿½Ø˜Oï¿½ï¿½ ï¿½ï¿½
+    uint8_t returnMode = 0;  // ï¿½Aï¿½Oï¿½ï¿½ï¿½ï¿½Î»
     if (specimenReturn == 1) {
-        returnMode = 1;  // Á¢¿Ì»ØÎ»
+        returnMode = 1;  // ï¿½ï¿½ï¿½Ì»ï¿½Î»
     }
 
-	qDebug() << "0A7CÐ´ÈëÇ°" << mi_PC_TEST_3;
-    // Çå³ý Bit4~7£¬ÔÙÔO¶¨
+	qDebug() << "0A7CÐ´ï¿½ï¿½Ç°" << mi_PC_TEST_3;
+    // ï¿½ï¿½ï¿½ Bit4~7ï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½ï¿½
     mi_PC_TEST_3 = (mi_PC_TEST_3 & ~0xF0) | ((returnMode & 0x0F) << 4);
 
-    //µÚ4¸öbitÖÃÎª1
+    //ï¿½ï¿½4ï¿½ï¿½bitï¿½ï¿½Îª1
     //mi_PC_TEST_3 |= 0x10;
 
-	qDebug() << "0A7CÐ´Èëºó" << mi_PC_TEST_3;
-    //Ð´Èë»ØÎ»
+	qDebug() << "0A7CÐ´ï¿½ï¿½ï¿½" << mi_PC_TEST_3;
+    //Ð´ï¿½ï¿½ï¿½Î»
     if (!writeInt16(socket, 0x0A7C, mi_PC_TEST_3, err)) {
 		err = "writeInt16 error " + socket->socketError();
 		return false;
     }
 
 
-    ////ÉèÖÃ²âÊÔºóµÄ¶¯×÷
+    ////ï¿½ï¿½ï¿½Ã²ï¿½ï¿½Ôºï¿½Ä¶ï¿½ï¿½ï¿½
     //int16_t PC_TEST_3 = 0;
-    ////µÚ4¸öbitÖÃÎª1
+    ////ï¿½ï¿½4ï¿½ï¿½bitï¿½ï¿½Îª1
     //PC_TEST_3 |= 0x10;
     //if (!writeInt16(socket, 0x0A7C, PC_TEST_3, err)) {
     //    err = "writeInt16 error " + socket->socketError();
@@ -569,45 +569,45 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 		return false;
 	}
    
-	//Ð´Èë³õÊ¼¸ºÔØÖµ
+	//Ð´ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Öµ
 	if (!writeFloat(socket, 0x0a2c, initialLoadValue, err))
 		return false;
 
     qDebug() << "startPoint" << startPoint;
-    //Ð´ÈëÆðÊ¼µã
+    //Ð´ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
 	if (!writeFloat(socket, 0x0A44, startPoint, err))
 		return false;
 
     qDebug() << "startPoint" << endCondition;
-    //Ð´Èë½áÊøµã
+    //Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (!writeFloat(socket, 0x0A48, endCondition, err))
 		return false;
 
-	//Ð´Èë×î´óÅ¤Á¦
+	//Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Å¤ï¿½ï¿½
 	if (!writeFloat(socket, 0x0A60, maxTorque, err))
 		return false;
-	//Ð´Èë×î´ó½Ç¶È
+	//Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ç¶ï¿½
 	if (!writeFloat(socket, 0x0A64, maxAngle, err))
 		return false;
-	//Ð´Èë¶ÏÁÑÃô¸Ð¶È
+	//Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
 	if (!writeFloat(socket, 0x0A30, breakSensitivity, err))
 		return false;
-    //Ð´Èë¶¨ËÙ
+    //Ð´ï¿½ë¶¨ï¿½ï¿½
 	if (!writeInt16(socket, 0x1402, 0x0000, err))
 		return false;
-    //Ð´ÈëÒÆ¶¯ËÙ¶È
+    //Ð´ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½Ù¶ï¿½
     if (!writeFloat(socket, 0x1108, moveSpeed, err))
         return false;
 
 
     int16_t mi_PC_TEST_2 = 0;
-    //Ð´Èëµ¥Î»
+    //Ð´ï¿½ëµ¥Î»
     if (unit == "N") {
-        //µÚ5¸öbitÖÃÎª0
+        //ï¿½ï¿½5ï¿½ï¿½bitï¿½ï¿½Îª0
         mi_PC_TEST_2 &= 0xDF;
     }
     else if (unit == "mm") {
-        //µÚ5¸öbitÐ´Èë1
+        //ï¿½ï¿½5ï¿½ï¿½bitÐ´ï¿½ï¿½1
         mi_PC_TEST_2 |= 0x20;
     }
     else {
@@ -620,16 +620,16 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     {
         if (zeroModeList[i] == "torqueZero")
         {
-            //µÚ0¸öbitÐ´Èë1
+            //ï¿½ï¿½0ï¿½ï¿½bitÐ´ï¿½ï¿½1
             mi_PC_TEST_2 |= 0x03;
         }
         else if (zeroModeList[i] == "angleZero")
         {
-            //µÚ1¸öbitÐ´Èë1
+            //ï¿½ï¿½1ï¿½ï¿½bitÐ´ï¿½ï¿½1
             mi_PC_TEST_2 |= 0x04;
         }
         else if (zeroModeList[i] == "angleZeroAndTorqueZero") {
-            //µÚ1 2¸öbitÐ´Èë1
+            //ï¿½ï¿½1 2ï¿½ï¿½bitÐ´ï¿½ï¿½1
 
             mi_PC_TEST_2 |= 0x07;
         }
@@ -639,7 +639,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     if (!writeInt16(socket, 0x0A7A, mi_PC_TEST_2, err))
         return false;
 
-    //Ö¸¶¨»º³åÇøµÄ¼ÇÂ¼À´Ô´
+    //Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Â¼ï¿½ï¿½Ô´
 	int16_t REC_SOURCE = 0x0000;
 
 	REC_SOURCE |= 0x0F;
@@ -647,8 +647,8 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 		err = "writeInt16 error " + socket->socketError();
 		return false;
     }
-	//Ð´Èë²ÉÑùÆµÂÊ
-	//int32_t mi_SampleRate = 1;//5KµÄ²ÉÑùÂÊ
+	//Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½
+	//int32_t mi_SampleRate = 1;//5Kï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½
  //   if (!writeInt32(socket, 0x080c, mi_SampleRate, err)) {
  //       err = "writeInt32 error " + socket->socketError();
  //       return false;
@@ -676,36 +676,36 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
 
     QVector< DF_SET>  dfSets;
     // TODO
-    // °Ñ·½·¨Éè¶¨´«ÖÁDF SET·½·¨Éè¶¨ÖÐ
+    // ï¿½Ñ·ï¿½ï¿½ï¿½ï¿½è¶¨ï¿½ï¿½ï¿½ï¿½DF SETï¿½ï¿½ï¿½ï¿½ï¿½è¶¨ï¿½ï¿½
     if (mode == "destructive") {
-        //Ð´ÈëÒÆ¶¯ËÙ¶È
+        //Ð´ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½Ù¶ï¿½
         if (!writeFloat(socket, 0x1408, torsionSpeed, err))
             return false;
 
-        //Ð´ÈëÁ¦Á¿ÉÏÏÞ
+        //Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         if (!writeFloat(socket, 0x0A58, (float)maxTorque, err))
             return false;
 
-        //Ð´Èë½Ç¶ÈÉÏÏÞ
+        //Ð´ï¿½ï¿½Ç¶ï¿½ï¿½ï¿½ï¿½ï¿½
         if (!writeFloat(socket, 0x0A5C, (float)maxAngle, err))
             return false;
 
-        //Ð´ÈëÒÆ¶¯ËÙ¶È
+        //Ð´ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½Ù¶ï¿½
         if (!writeFloat(socket, 0x1108, moveSpeed, err))
             return false;
 
-        //²»ÐèÒªÐ´Èë0A10
+        //ï¿½ï¿½ï¿½ï¿½ÒªÐ´ï¿½ï¿½0A10
         if (0) {
             if (direction == "Forward") {
                 int16_t value = 0;
                 if (!readInt16(socket, 0x0a10, value, err)) {
                     return false;
                 }
-                //½«BIT 0 ÉèÖÃÎª0
+                //ï¿½ï¿½BIT 0 ï¿½ï¿½ï¿½ï¿½Îª0
                 value &= ~(1 << 0);
-                //½«BIT 9 ÉèÖÃÎª1
+                //ï¿½ï¿½BIT 9 ï¿½ï¿½ï¿½ï¿½Îª1
                 value |= (1 << 9);
-                //½«BIT 10ÉèÖÃÎª0
+                //ï¿½ï¿½BIT 10ï¿½ï¿½ï¿½ï¿½Îª0
                 value &= ~(1 << 10);
 
                 if (!writeInt16(socket, 0x0a10, value, err))
@@ -713,18 +713,18 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
                 if (!readInt16(socket, 0x0a10, value, err)) {
                     return false;
                 }
-                //»Ø¶Á¼ì²éÒ»±é
-                //¼ì²éBIT 0ÊÇ·ñÎª0
+                //ï¿½Ø¶ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½
+                //ï¿½ï¿½ï¿½BIT 0ï¿½Ç·ï¿½Îª0
                 if ((value & (1 << 0)) != 0) {
                     err = "BIT 0 is not set";
                     return false;
                 }
-                //¼ì²éBIT 9ÊÇ·ñÎª1
+                //ï¿½ï¿½ï¿½BIT 9ï¿½Ç·ï¿½Îª1
                 if ((value & (1 << 9)) == 0) {
                     err = "BIT 9 is not set";
                     return false;
                 }
-                //¼ì²éBIT 10ÊÇ·ñÎª0
+                //ï¿½ï¿½ï¿½BIT 10ï¿½Ç·ï¿½Îª0
                 if ((value & (1 << 10)) != 0) {
                     err = "BIT 10 is not set";
                     return false;
@@ -737,17 +737,17 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
                     if (!readInt16(socket, 0x0a16, value, err)) {
                         return false;
                     }
-                    //½«BIT 1 ÉèÖÃÎª1
+                    //ï¿½ï¿½BIT 1 ï¿½ï¿½ï¿½ï¿½Îª1
                     value |= (1 << 1);
 
                     if (!writeInt16(socket, 0x0a16, value, err))
                         return false;
 
-                    //¼ì²é»Ø¶ÁÒ»±é
+                    //ï¿½ï¿½ï¿½Ø¶ï¿½Ò»ï¿½ï¿½
                     if (!readInt16(socket, 0x0a16, value, err)) {
                         return false;
                     }
-                    //¼ì²éBIT 1ÊÇ·ñÎª1
+                    //ï¿½ï¿½ï¿½BIT 1ï¿½Ç·ï¿½Îª1
                     if ((value & (1 << 1)) == 0) {
                         err = "BIT 1 is not set";
                         return false;
@@ -761,31 +761,31 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
                     return false;
                 }
 
-                //½«BIT 0 ÉèÖÃÎª1
+                //ï¿½ï¿½BIT 0 ï¿½ï¿½ï¿½ï¿½Îª1
                 value |= (1 << 0);
-                //½«BIT 9 ÉèÖÃÎª1
+                //ï¿½ï¿½BIT 9 ï¿½ï¿½ï¿½ï¿½Îª1
                 value |= (1 << 9);
-                //½«BIT 10ÉèÖÃÎª1
+                //ï¿½ï¿½BIT 10ï¿½ï¿½ï¿½ï¿½Îª1
                 value |= (1 << 10);
 
                 if (!writeInt16(socket, 0x0a10, value, err))
                     return false;
 
-                //»Ø¶ÁÈ·ÈÏÒ»±é
+                //ï¿½Ø¶ï¿½È·ï¿½ï¿½Ò»ï¿½ï¿½
                 if (!readInt16(socket, 0x0a10, value, err)) {
                     return false;
                 }
-                //¼ì²éBIT 0ÊÇ·ñÎª1
+                //ï¿½ï¿½ï¿½BIT 0ï¿½Ç·ï¿½Îª1
                 if ((value & (1 << 0)) == 0) {
                     err = "BIT 0 is not set";
                     return false;
                 }
-                //¼ì²éBIT 9ÊÇ·ñÎª1
+                //ï¿½ï¿½ï¿½BIT 9ï¿½Ç·ï¿½Îª1
                 if ((value & (1 << 9)) == 0) {
                     err = "BIT 9 is not set";
                     return false;
                 }
-                //¼ì²éBIT 10ÊÇ·ñÎª1
+                //ï¿½ï¿½ï¿½BIT 10ï¿½Ç·ï¿½Îª1
                 if ((value & (1 << 10)) == 0) {
                     err = "BIT 10 is not set";
                     return false;
@@ -797,21 +797,21 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
                     if (!readInt16(socket, 0x0a16, value, err)) {
                         return false;
                     }
-                    //½«BIT 1 È¡·´
+                    //ï¿½ï¿½BIT 1 È¡ï¿½ï¿½
                     value ^= (1 << 1);
-                    //½«BIT 9 È¡·´
+                    //ï¿½ï¿½BIT 9 È¡ï¿½ï¿½
                     value ^= (1 << 9);
-                    ////½«BIT 1 ÉèÖÃÎª0
+                    ////ï¿½ï¿½BIT 1 ï¿½ï¿½ï¿½ï¿½Îª0
                     //value &= ~(1 << 1);
 
                     if (!writeInt16(socket, 0x0a16, value, err))
                         return false;
 
-                    //¼ì²é»Ø¶ÁÒ»±é
+                    //ï¿½ï¿½ï¿½Ø¶ï¿½Ò»ï¿½ï¿½
                     if (!readInt16(socket, 0x0a16, value, err)) {
                         return false;
                     }
-                    ////¼ì²éBIT 1ÊÇ·ñÎª0
+                    ////ï¿½ï¿½ï¿½BIT 1ï¿½Ç·ï¿½Îª0
            //         if ((value & (1 << 1)) != 0) {
            //             err = "BIT 1 is not set";
            //             return false;
@@ -828,19 +828,19 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             return false;
         }
         if (adDirection == "Forward") {
-			//½«BIT 1 ÉèÖÃÎª1
+			//ï¿½ï¿½BIT 1 ï¿½ï¿½ï¿½ï¿½Îª1
 			value |= (1 << 1);
 		}
         else  if (adDirection == "Backward") {
-			//½«BIT 1 ÉèÖÃÎª0
+			//ï¿½ï¿½BIT 1 ï¿½ï¿½ï¿½ï¿½Îª0
 			value &= ~(1 << 1);
         }
         if (direction == "Forward") {
-            //½«BIT 9 ÉèÖÃÎª1
+            //ï¿½ï¿½BIT 9 ï¿½ï¿½ï¿½ï¿½Îª1
             value |= (1 << 9);
         }
 		else if (direction == "Backward") {
-            //½«BIT 9 ÉèÖÃÎª0
+            //ï¿½ï¿½BIT 9 ï¿½ï¿½ï¿½ï¿½Îª0
 			value &= ~(1 << 9);
 		}
 		if (!writeInt16(socket, 0x0a16, value, err))
@@ -848,19 +848,19 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     }
     else if (mode == "static") {
 
-        //Ð´ÈëÁ¦Á¿ÉÏÏÞ
+        //Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         if (!writeFloat(socket, 0x0A58, (float)maxTorque, err))
             return false;
 
-        //Ð´Èë½Ç¶ÈÉÏÏÞ
+        //Ð´ï¿½ï¿½Ç¶ï¿½ï¿½ï¿½ï¿½ï¿½
         if (!writeFloat(socket, 0x0A5C, (float)maxAngle, err))
             return false;
 
 
-        //Ð´ÈëÒÆ¶¯ËÙ¶È
+        //Ð´ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½Ù¶ï¿½
         if (!writeFloat(socket, 0x1C08, torsionSpeed, err))
             return false;
-        //¹éÁã
+        //ï¿½ï¿½ï¿½ï¿½
         {
             DF_SET df_set;
             if (staticMode == "torque")
@@ -885,7 +885,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             df_set.DF_HZ = 10;
 
 
-            //Èç¹ûÊÇµÚÒ»¸ö²½Öè£¬ÏÈÎ»ÒÆ0mm
+            //ï¿½ï¿½ï¿½ï¿½Çµï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½è£¬ï¿½ï¿½Î»ï¿½ï¿½0mm
             dfSets.push_back(df_set);
         }
 
@@ -930,10 +930,10 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         }
 
         df_set.DF_HZ = torsionSpeed;
-        //µÚÒ»¸ö²½Öè
+        //ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		dfSets.push_back(df_set);
 
-        //¼ÓÈëÑÓ³Ù
+        //ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½
         if (delayTime != 0) {
             DF_SET df_set_delay;
             df_set_delay.IR_TYPE = 3;
@@ -941,7 +941,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             dfSets.push_back(df_set_delay);
         }
        
-        //¹éÁã
+        //ï¿½ï¿½ï¿½ï¿½
         {
             DF_SET df_set;
             if (staticMode == "torque")
@@ -966,12 +966,12 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             df_set.DF_HZ = torsionSpeed;
 
 
-            //Èç¹ûÊÇµÚÒ»¸ö²½Öè£¬ÏÈÎ»ÒÆ0mm
+            //ï¿½ï¿½ï¿½ï¿½Çµï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½è£¬ï¿½ï¿½Î»ï¿½ï¿½0mm
             dfSets.push_back(df_set);
         }
 
 
-        //¼ÓÈëÑÓ³Ù
+        //ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½
         if (delayTime != 0) {
             DF_SET df_set_delay;
             df_set_delay.IR_TYPE = 3;
@@ -979,7 +979,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             dfSets.push_back(df_set_delay);
         }
 
-		//µÚ¶þ¸ö²½Öè
+		//ï¿½Ú¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		DF_SET df_set_second;
         df_set_second = df_set;
 
@@ -993,7 +993,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         }  
         dfSets.push_back(df_set_second);
 
-        //ÑÓÊ±
+        //ï¿½ï¿½Ê±
         if (delayTime != 0) {
             DF_SET df_set_delay;
             df_set_delay.IR_TYPE = 3;
@@ -1001,7 +1001,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             dfSets.push_back(df_set_delay);
         }
 
-        //¹éÁã
+        //ï¿½ï¿½ï¿½ï¿½
         {
             DF_SET df_set;
             if (staticMode == "torque")
@@ -1026,12 +1026,12 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             df_set.DF_HZ = torsionSpeed;
 
 
-            //Èç¹ûÊÇµÚÒ»¸ö²½Öè£¬ÏÈÎ»ÒÆ0mm
+            //ï¿½ï¿½ï¿½ï¿½Çµï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½è£¬ï¿½ï¿½Î»ï¿½ï¿½0mm
             dfSets.push_back(df_set);
         }
 
 
-        //¼ÓÈëÑÓ³Ù
+        //ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½
         if (delayTime != 0) {
             DF_SET df_set_delay;
             df_set_delay.IR_TYPE = 3;
@@ -1058,7 +1058,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
             df_set.DF_HZ = 30;
 
             
-            //Èç¹ûÊÇµÚÒ»¸ö²½Öè£¬ÏÈÎ»ÒÆ0mm
+            //ï¿½ï¿½ï¿½ï¿½Çµï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½è£¬ï¿½ï¿½Î»ï¿½ï¿½0mm
             dfSets.push_back(df_set);
         }
 
@@ -1104,15 +1104,15 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
         df_set.DF_END_CYCLE = cycleCount;
         df_set.JUMP_NO = 0;
 
-        //µÚÒ»¸ö²½Öè
+        //ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         dfSets.push_back(df_set);
 
         
     }
     /*
     *STEP#2
-    * ±éÀú·½·¨µÄÃ¿×éÉè¶¨ÐÅÏ¢
-    * ×îºóÒ»×éÐÅÏ¢ÐèÒªÉèÖÃÎª0£¬¸æÖªÏÂÎ»»ú·½·¨Éè¶¨ÐÅÏ¢½áÊø
+    * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½è¶¨ï¿½ï¿½Ï¢
+    * ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Îª0ï¿½ï¿½ï¿½ï¿½Öªï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½è¶¨ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½
     */
     for (int i = 0; i <= dfSets.length(); i++) {
         if (i != dfSets.length()) {
@@ -1121,7 +1121,7 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
                 return false;
             continue;
         }
-        //Ð´Íê×îºóÒ»¸öDF SET£¬Ð´Èë½áÊøÊý¾Ý
+        //Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½DF SETï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         DF_SET tmp;
         tmp.mui_GroupNo = i;
         //tmp.IR_TYPE = 0;
@@ -1138,13 +1138,13 @@ bool ControlTestCommHandler::transferMehod(CommunicationThread* socket, QJsonObj
     }
 
     /*
-    ÎÄµµ½âÊÍ:Œ¢ PC_ADD Ö¸¶¨µÄ „Ó‘B½M„e Õû½M °áµ½ ¼°•rï@Ê¾…^  	DF_SET[PC_ADD]  0X09B0
-    ¾É°æ´úÂëÖÐÓÐ´ËÃüÁî,°áÔË´Ë¶ÎÂß¼­
+    ï¿½Äµï¿½ï¿½ï¿½ï¿½ï¿½:ï¿½ï¿½ PC_ADD Ö¸ï¿½ï¿½ï¿½ï¿½ ï¿½Ó‘Bï¿½Mï¿½e ï¿½ï¿½ï¿½M ï¿½áµ½ ï¿½ï¿½ï¿½rï¿½@Ê¾ï¿½^  	DF_SET[PC_ADD]  0X09B0
+    ï¿½É°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½Ë´Ë¶ï¿½ï¿½ß¼ï¿½
     */
     QByteArray buffer;
     QByteArray recvData;
 	buffer.fill(0x00, 528);
-    packPC_KEY(0x3a, 0, buffer);//ÕâÀï£¬¾ÍÊÇÒ»Ö±ÏÂ·¢²»ÁËÎÂ¶ÈµÄÔ­Òò
+    packPC_KEY(0x3a, 0, buffer);//ï¿½ï¿½ï¿½ï£¬ï¿½ï¿½ï¿½ï¿½Ò»Ö±ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¶Èµï¿½Ô­ï¿½ï¿½
     if (!socket->writeData(buffer)) {
         err = "writeData error " + socket->socketError();
         return false;
@@ -1294,7 +1294,21 @@ bool ControlTestCommHandler::stopTest(CommunicationThread* socket, QJsonObject& 
 
 
 bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject& obj, QString& err) {
+    QString modbusSerialPort = obj.value("modbusSerialPort").toString();
+    if (modbusSerialPort.isEmpty())
+    {
+        qDebug() << "modbusSerialPort error";
+        return false;
+    }
+   if (!modbus.open(modbusSerialPort, 19200)) {
 
+        err = "open modbus serial port error";
+        return false;
+
+
+
+	}
+    //modbus.
 
 	QByteArray buffer;
 	packPC_KEY(0x05, buffer);
@@ -1323,7 +1337,7 @@ bool ControlTestCommHandler::setAD1_DIR(CommunicationThread* socket, QJsonObject
     if (!readInt16(socket, 0x0a16, value, err)) {
         return false;
     }
-    //½«BIT 0 ÉèÖÃÎª1
+    //ï¿½ï¿½BIT 0 ï¿½ï¿½ï¿½ï¿½Îª1
     int bitNumber = 0;
     if (onOrOff) {
         value |= (1 << bitNumber);
@@ -1345,7 +1359,7 @@ bool ControlTestCommHandler::setAD2_DIR(CommunicationThread* socket, QJsonObject
     if (!readInt16(socket, 0x0a16, value, err)) {
         return false;
     }
-    //½«BIT 1 ÉèÖÃÎª1
+    //ï¿½ï¿½BIT 1 ï¿½ï¿½ï¿½ï¿½Îª1
     int bitNumber = 1;
     if (onOrOff) {
         value |= (1 << bitNumber);
@@ -1367,7 +1381,7 @@ bool ControlTestCommHandler::setAD1_UPDN(CommunicationThread* socket, QJsonObjec
     if (!readInt16(socket, 0x0a16, value, err)) {
         return false;
     }
-    //½«BIT 8 ÉèÖÃÎª1
+    //ï¿½ï¿½BIT 8 ï¿½ï¿½ï¿½ï¿½Îª1
     int bitNumber = 8;
     if (onOrOff) {
         value |= (1 << bitNumber);
@@ -1389,7 +1403,7 @@ bool ControlTestCommHandler::setAD2_UPDN(CommunicationThread* socket, QJsonObjec
     if (!readInt16(socket, 0x0a16, value, err)) {
         return false;
     }
-    //½«BIT 9 ÉèÖÃÎª1
+    //ï¿½ï¿½BIT 9 ï¿½ï¿½ï¿½ï¿½Îª1
     int bitNumber = 9;
     if (onOrOff) {
         value |= (1 << bitNumber);
@@ -1404,7 +1418,7 @@ bool ControlTestCommHandler::setAD2_UPDN(CommunicationThread* socket, QJsonObjec
     return true;
 }
 
-//Ð´ÈëX DIR
+//Ð´ï¿½ï¿½X DIR
 bool ControlTestCommHandler::setXDIR(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 
     bool onOrOff = obj["on"].toBool();
@@ -1414,7 +1428,7 @@ bool ControlTestCommHandler::setXDIR(CommunicationThread* socket, QJsonObject& o
     if (!readInt16(socket, 0x0a10, value, err)) {
         return false;
     }
-    //½«BIT 9 ÉèÖÃÎª1
+    //ï¿½ï¿½BIT 9 ï¿½ï¿½ï¿½ï¿½Îª1
     int bitNumber = 9;
     if (onOrOff) {
         value |= (1 << bitNumber);
@@ -1429,14 +1443,14 @@ bool ControlTestCommHandler::setXDIR(CommunicationThread* socket, QJsonObject& o
     return true;
 }
 
-//Ð´ÈëYZ DIR
+//Ð´ï¿½ï¿½YZ DIR
 bool ControlTestCommHandler::setYZDIR(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 	bool onOrOff = obj["on"].toBool();
 	int16_t value = 0;
 	if (!readInt16(socket, 0x0a10, value, err)) {
 		return false;
 	}
-	//½«BIT 10 ÉèÖÃÎª1
+	//ï¿½ï¿½BIT 10 ï¿½ï¿½ï¿½ï¿½Îª1
 	int bitNumber = 10;
 	if (onOrOff) {
 		value |= (1 << bitNumber);
@@ -1450,14 +1464,14 @@ bool ControlTestCommHandler::setYZDIR(CommunicationThread* socket, QJsonObject& 
 }
 
 
-//Ð´Èë XGAIN
+//Ð´ï¿½ï¿½ XGAIN
 bool ControlTestCommHandler::setXGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err) {
     float gain = obj["GAIN"].toDouble();
     if (!writeFloat(socket, 0x0a70, gain, err))
         return false;
     return true;
 }
-//Ð´ÈëYZ GAIN
+//Ð´ï¿½ï¿½YZ GAIN
 bool ControlTestCommHandler::setYZGAIN(CommunicationThread* socket, QJsonObject& obj, QString& err) {
     float gain = obj["GAIN"].toDouble();
     if (!writeFloat(socket, 0x0a74, gain, err))
@@ -1653,7 +1667,7 @@ bool ControlTestCommHandler::spin(CommunicationThread* socket, QJsonObject& obj,
         }
 
         /**
-         * ÅÐ¶ÏÊý¾ÝÕýÈ·ÐÔ
+         * ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½
          *
          */
         if ((recvData[4] & 0xff) != 0x52 || (recvData[5] & 0xff) != 0x44 || (recvData[6] & 0xff) != 0x04) {
@@ -1713,22 +1727,22 @@ bool ControlTestCommHandler::reSpin(CommunicationThread* socket, QJsonObject& ob
 	return true;
 }
 
-//Æô¶¯²âÊÔÇ°µÄ×¼±¸£º»Ø¶Áµ±Ç°½Ç¶È£¨0x0900¿éÆ«ÒÆ0x34£¬¼´µØÖ·0x0934£¬float£©£¬
-//ÓëÉè¶¨½Ç¶È±È½Ï£¬Æ«Ð¡Ôò moveup(spin)£¬Æ«´óÔò movedown(reSpin)£¬
-//Ã¿´ÎÖ»ÒÆ¶¯Ò»µãµã£¬¹ÊÑ­»·"ÒÆ¶¯->»Ø¶Á->µ÷Õû"£¬Ö±µ½ |Êµ¼Ê-Éè¶¨| <= ãÐÖµ
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½ï¿½Ø¶ï¿½ï¿½ï¿½Ç°ï¿½Ç¶È£ï¿½0x0900ï¿½ï¿½Æ«ï¿½ï¿½0x34ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·0x0934ï¿½ï¿½floatï¿½ï¿½ï¿½ï¿½
+//ï¿½ï¿½ï¿½è¶¨ï¿½Ç¶È±È½Ï£ï¿½Æ«Ð¡ï¿½ï¿½ moveup(spin)ï¿½ï¿½Æ«ï¿½ï¿½ï¿½ï¿½ movedown(reSpin)ï¿½ï¿½
+//Ã¿ï¿½ï¿½Ö»ï¿½Æ¶ï¿½Ò»ï¿½ï¿½ã£¬ï¿½ï¿½Ñ­ï¿½ï¿½"ï¿½Æ¶ï¿½->ï¿½Ø¶ï¿½->ï¿½ï¿½ï¿½ï¿½"ï¿½ï¿½Ö±ï¿½ï¿½ |Êµï¿½ï¿½-ï¿½è¶¨| <= ï¿½ï¿½Öµ
 bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 	double targetAngle = obj.contains("targetAngle") ? obj["targetAngle"].toDouble() : 0.0143;// obj["targetAngle"].toDouble();
 	double threshold = obj.contains("threshold") ? obj["threshold"].toDouble() : 0.00005;
-	const int maxIterations = 5000; //°²È«ÉÏÏÞ£¬·ÀÖ¹Òì³£Ê±ËÀÑ­»·
+	const int maxIterations = 5000; //ï¿½ï¿½È«ï¿½ï¿½ï¿½Þ£ï¿½ï¿½ï¿½Ö¹ï¿½ì³£Ê±ï¿½ï¿½Ñ­ï¿½ï¿½
 
-	//ÒÆ¶¯ËÙ¶È×ÔÊÊÓ¦£ºÔ¶ÀëÉè¶¨½Ç¶ÈÊ±ÓÃ¸ßËÙ(500)£¬½Ó½üÊ±ÏßÐÔ½µµ½ minSpeed
+	//ï¿½Æ¶ï¿½ï¿½Ù¶ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½è¶¨ï¿½Ç¶ï¿½Ê±ï¿½Ã¸ï¿½ï¿½ï¿½(500)ï¿½ï¿½ï¿½Ó½ï¿½Ê±ï¿½ï¿½ï¿½Ô½ï¿½ï¿½ï¿½ minSpeed
 	const double maxSpeed = 400.0;
 	const double minSpeed = 10.0;
-	double firstAbsDiff = -1.0; //Ê×´Î»Ø¶ÁµÄ|diff|£¬×÷ÎªÂúËÙ»ù×¼
-	bool converged = false; //ÊÇ·ñÒÑ´ïµ½ãÐÖµ
+	double firstAbsDiff = -1.0; //ï¿½×´Î»Ø¶ï¿½ï¿½ï¿½|diff|ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½Ù»ï¿½×¼
+	bool converged = false; //ï¿½Ç·ï¿½ï¿½Ñ´ïµ½ï¿½ï¿½Öµ
 
 	for (int i = 0; i < maxIterations; i++) {
-		//¶ÁÈ¡µ±Ç°½Ç¶È£º4×Ö½Ú£¬µØÖ· 0x0934£¨0x0900 + 0x34£©£¬°´ float ½âÎö
+		//ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½Ç¶È£ï¿½4ï¿½Ö½Ú£ï¿½ï¿½ï¿½Ö· 0x0934ï¿½ï¿½0x0900 + 0x34ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ float ï¿½ï¿½ï¿½ï¿½
 		int32_t Hex32 = 0;
 		if (!readInt32(socket, 0x0934, Hex32, err)) {
 			break;
@@ -1739,27 +1753,27 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 		double diff = currentAngle - targetAngle;
 		double absDiff = qAbs(diff);
 		if (absDiff <= threshold) {
-			converged = true; //´ïµ½ãÐÖµ£¬Í£Ö¹
+			converged = true; //ï¿½ïµ½ï¿½ï¿½Öµï¿½ï¿½Í£Ö¹
 			break;
 		}
 
-		//Ê×´Î¼ÇÂ¼»ù×¼|diff|£¬ÓÃÓÚ°´±ÈÀý¼ÆËãËÙ¶È
+		//ï¿½×´Î¼ï¿½Â¼ï¿½ï¿½×¼|diff|ï¿½ï¿½ï¿½ï¿½ï¿½Ú°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
 		if (firstAbsDiff < 0) {
 			firstAbsDiff = absDiff;
 		}
-		//ËÙ¶ÈËæ½Ó½ü³Ì¶ÈÏßÐÔ¼õÐ¡£ºÔ¶ÀëÊ± maxSpeed£¬½Ó½üÊ±½µµ½ minSpeed
+		//ï¿½Ù¶ï¿½ï¿½ï¿½Ó½ï¿½ï¿½Ì¶ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½Ð¡ï¿½ï¿½Ô¶ï¿½ï¿½Ê± maxSpeedï¿½ï¿½ï¿½Ó½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ minSpeed
 		double ratio = firstAbsDiff > 0 ? (absDiff / firstAbsDiff) : 1.0;
 		double speed = minSpeed + (maxSpeed - minSpeed) * ratio;
 		if (speed > maxSpeed) speed = maxSpeed;
 		if (speed < minSpeed) speed = minSpeed;
 		qDebug() << "prepareTest absDiff:" << absDiff << "speed:" << speed;
 
-		//Ð´ÈëÒÆ¶¯ËÙ¶È
+		//Ð´ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½Ù¶ï¿½
 		if (!writeFloat(socket, 0x1108, static_cast<float>(speed), err)) {
 			break;
 		}
 
-		//µ±Ç°½Ç¶È±ÈÉè¶¨½Ç¶ÈÐ¡ -> moveup(spin)£»·ñÔò -> movedown(reSpin)
+		//ï¿½ï¿½Ç°ï¿½Ç¶È±ï¿½ï¿½è¶¨ï¿½Ç¶ï¿½Ð¡ -> moveup(spin)ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ -> movedown(reSpin)
 		QJsonObject dummy;
 		bool moveOk = false;
 		if (diff < 0) {
@@ -1772,7 +1786,7 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 			break;
 		}
 
-		QThread::msleep(500); //µÈ´ýµç»úÒÆ¶¯Ò»Ð¡¶ÎºóÔÙ»Ø¶Á
+		QThread::msleep(500); //ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½Ò»Ð¡ï¿½Îºï¿½ï¿½Ù»Ø¶ï¿½
 	}
 
 	if (!converged && err.isEmpty()) {
@@ -1780,9 +1794,9 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 	}
 
     QJsonObject dummy;
-	stop(socket, dummy, err); //Í£Ö¹ÒÆ¶¯£¬±ÜÃâ¼ÌÐøÒÆ¶¯
+	stop(socket, dummy, err); //Í£Ö¹ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
 
-	//½Ó¿Ú½áÊøºó»Ö¸´ÒÆ¶¯ËÙ¶Èµ½500£¨Ê§°Ü²»¸²¸ÇÒÑÓÐ´íÎó£©
+	//ï¿½Ó¿Ú½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½Æ¶ï¿½ï¿½Ù¶Èµï¿½500ï¿½ï¿½Ê§ï¿½Ü²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½
 	QString restoreErr;
 	if (!writeFloat(socket, 0x1108, 500.0f, restoreErr) && err.isEmpty()) {
 		err = restoreErr;
@@ -1791,7 +1805,7 @@ bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObjec
 	return converged;
 }
 
-//¼Ð³Ö
+//ï¿½Ð³ï¿½
 bool ControlTestCommHandler::grip(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 	QByteArray buffer;
 	packPC_KEY(0x107, 0x01, buffer);
@@ -1811,7 +1825,7 @@ bool ControlTestCommHandler::grip(CommunicationThread* socket, QJsonObject& obj,
 	return true;
 }
 
-//ËÉ¿ª
+//ï¿½É¿ï¿½
 bool ControlTestCommHandler::release(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 	QByteArray buffer;
 	packPC_KEY(0x107, 0x00, buffer);
