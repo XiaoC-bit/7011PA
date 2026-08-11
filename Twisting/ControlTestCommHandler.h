@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <QObject>
+#include <vector>
 
 #include "CommHandler.h"
 #include "TemiSp3Modbus.h"
@@ -66,6 +67,15 @@ private:
 	
 private:
 
+	bool readData(CommunicationThread* socket, QString& err);
+
+	typedef struct {
+		double torque;
+	}TestingRawData;
+
+	TestingRawData testingRawdata_;
+
+	std::vector<TestingRawData> testingRawDatas_;
 	//单个写入DF SET
 	bool perSetDfSet(CommunicationThread* socket, DF_SET& df_set, QString& err);
 

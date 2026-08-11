@@ -1292,6 +1292,35 @@ bool ControlTestCommHandler::stopTest(CommunicationThread* socket, QJsonObject& 
 
 
 
+bool ControlTestCommHandler::readData(CommunicationThread* socket, QString& err) {
+    QByteArray buffer;
+    buffer.fill(0x00, 528);
+    setCmd(E_Mode::Read, buffer);
+    setLength(0xFF, buffer);
+    setAddr(0x0900, buffer);
+    calcSum(buffer);
+    if (!socket->writeData(buffer)) {
+        err = "writeData error " + socket->socketError();
+        return false;
+    }
+    QByteArray recvData;
+    if (!socket->readData(recvData)) {
+        err = "readData error " + socket->socketError();
+        return false;
+    }
+    if (!checkSum(recvData)) {
+        err = "readData error ,checksum error";
+        return false;
+    }
+
+    int32_t Hex32 = (recvData[12 + 0x3c] & 0xff) +
+        (recvData[12 + 0x3d] & 0xff) * 0x100 +
+        (recvData[12 + 0x3e] & 0xff) * 0x10000 +
+        (recvData[12 + 0x3f] & 0xff) * 0x1000000;
+    float* pHex32 = (float*)&Hex32;
+    testingRawdata_.torque = *pHex32;//扭转机  轴向位移
+    return true;
+}
 
 bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject& obj, QString& err) {
     QString modbusSerialPort = obj.value("modbusSerialPort").toString();
@@ -1300,31 +1329,57 @@ bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject&
         qDebug() << "modbusSerialPort error";
         return false;
     }
-   if (!modbus.open(modbusSerialPort, 19200)) {
-
-        err = "open modbus serial port error";
+    if (!modbus.open(modbusSerialPort, 19200)) {
+        qDebug() << "open modbus serial port error";
         return false;
-
-
-
 	}
-    //modbus.
 
-	QByteArray buffer;
-	packPC_KEY(0x05, buffer);
-	if (!socket->writeData(buffer)) {
-		err = "writeData error " + socket->socketError();
+    //Modbus RTU 启动监听
+    if (!modbus.startTestSync(1)) {
+		qDebug() << "启动测试失败，跳过读速度";
 		return false;
 	}
-	QByteArray recvData;
-	if (!socket->readData(recvData)) {
-		err = "readData error " + socket->socketError();
-		return false;
-	}
-	if (!checkSum(recvData)) {
-		err = "readData error ,checksum error";
-		return false;
-	}
+
+    //等待一会再释放
+    QThread::msleep(1500);
+
+    if (!release(socket, obj, err)) {
+        qDebug() << "release error";
+        return false;
+    }
+
+
+    /**
+    通过readData，一直读取，保存到testingRawDatas_。
+    用一个计时器，一直读取10秒以内的数据。
+    testingRawDatas_可以在构造函数中，先reserve创建足够多的内存
+     */
+   
+
+	// QByteArray buffer;
+	// packPC_KEY(0x05, buffer);
+	// if (!socket->writeData(buffer)) {
+	// 	err = "writeData error " + socket->socketError();
+	// 	return false;
+	// }
+	// QByteArray recvData;
+	// if (!socket->readData(recvData)) {
+	// 	err = "readData error " + socket->socketError();
+	// 	return false;
+	// }
+	// if (!checkSum(recvData)) {
+	// 	err = "readData error ,checksum error";
+	// 	return false;
+	// }
+
+    bool ok = false;
+    double speed = modbus.readSpeedSync(1, &ok);
+    if (ok)
+        qDebug() << "速度:" << speed << "m/s";
+    else
+        qDebug() << "读速度失败";
+
+
 	return true;
 }
 

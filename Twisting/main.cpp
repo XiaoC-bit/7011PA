@@ -1,4 +1,4 @@
-#include "Twisting.h"
+ï»¿#include "Twisting.h"
 #include "httplib.h"
 #include <QtWidgets/QApplication>
 
@@ -120,11 +120,11 @@ bool waitForHttpServerReady(const QString& urlStr, int timeoutMs = 5000, int int
 	timer.start();
 
 	while (timer.elapsed() < timeoutMs) {
-		QUrl url(urlStr);  //  ´´½¨ QUrl ÊµÀý
-		QNetworkRequest request(url);  //  ÓÃ QUrl ¹¹Ôì QNetworkRequest
+		QUrl url(urlStr);  //  åˆ›å»º QUrl å®žä¾‹
+		QNetworkRequest request(url);  //  ç”¨ QUrl æž„é€  QNetworkRequest
 
 		QNetworkAccessManager manager;
-		QNetworkReply* reply = manager.get(request);  // ÕýÈ·µ÷ÓÃ get()
+		QNetworkReply* reply = manager.get(request);  // æ­£ç¡®è°ƒç”¨ get() 
 
 		QEventLoop loop;
 		QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
@@ -161,7 +161,7 @@ void startHttpServer(const QString& mountDir, int port) {
 
 	std::thread([port]() {
 		if (!server->listen("0.0.0.0", port)) {
-			qDebug() << "¼àÌýÊ§°Ü£¬¶Ë¿Ú¿ÉÄÜ±»Õ¼ÓÃ";
+			qDebug() << "ç›‘å¬å¤±è´¥ï¼Œç«¯å£å¯èƒ½è¢«å ç”¨";
 		}
 		}).detach();
 }
@@ -185,23 +185,23 @@ int main(int argc, char *argv[])
 
 	/*TemiSp3Modbus modbus;
 	if (!modbus.open("COM4", 19200)) {
-		qDebug() << "´®¿Ú´ò¿ªÊ§°Ü";
+		qDebug() << "ä¸²å£æ‰“å¼€å¤±è´¥";
 
 	}
 	else {
-		qDebug() << "´®¿Ú´ò¿ª³É¹¦";
+		qDebug() << "ä¸²å£æ‰“å¼€æˆåŠŸ";
 	}
 	if (modbus.startTestSync(1)) {
-		qDebug() << "Æô¶¯²âÊÔ³É¹¦";
+		qDebug() << "å¯åŠ¨æµ‹è¯•æˆåŠŸ";
 		bool ok = false;
 		double speed = modbus.readSpeedSync(1, &ok);
 		if (ok)
-			qDebug() << "ËÙ¶È:" << speed << "m/s";
+			qDebug() << "é€Ÿåº¦:" << speed << "m/s";
 		else
-			qDebug() << "¶ÁËÙ¶ÈÊ§°Ü";
+			qDebug() << "è¯»é€Ÿåº¦å¤±è´¥";
 	}
 	else {
-		qDebug() << "Æô¶¯²âÊÔÊ§°Ü£¬Ìø¹ý¶ÁËÙ¶È";
+		qDebug() << "å¯åŠ¨æµ‹è¯•å¤±è´¥ï¼Œè·³è¿‡è¯»é€Ÿåº¦";
 	}*/
 
 
@@ -276,7 +276,7 @@ int main(int argc, char *argv[])
 
 	ret = svr.listen("0.0.0.0", gConfig.frontPort);*/
 
-	// Æô¶¯ HTTP ·þÎñ
+	// å¯åŠ¨ HTTP æœåŠ¡
 	QString currentDir = QCoreApplication::applicationDirPath();
 	if (1) {
 		startHttpServer(currentDir + "/FrontEnv", gConfig.frontPort);
@@ -314,12 +314,12 @@ int main(int argc, char *argv[])
 		QString url = QString("http://localhost:%1").arg(gConfig.frontPort);
 
 		if (!waitForHttpServerReady(url, 5000)) {
-			qDebug() << "·þÎñÆô¶¯³¬Ê±£¬Î´¼àÌýµ½¶Ë¿Ú£º" << url;
+			qDebug() << "æœåŠ¡å¯åŠ¨è¶…æ—¶ï¼Œæœªç›‘å¬åˆ°ç«¯å£ï¼š" << url;
 			program.kill();
 			exit(1);
 		}
 
-		//µÈ´ý ÒÔÏÂURL¿ÉÒÔ·ÃÎÊ
+		//ç­‰å¾… ä»¥ä¸‹URLå¯ä»¥è®¿é—®
 		//QString uri = QString("http://localhost:%1").arg(gConfig.frontPort);
 	}
 

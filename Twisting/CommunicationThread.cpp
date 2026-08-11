@@ -343,9 +343,6 @@ static int __historyTest = 1;
 
 void CommunicationThread::timerFunc()
 {
-#ifdef _DEBUG
-#endif
-	auto tid = QThread::currentThread()->currentThreadId();
 	if (!commCtrlQueue_.empty()) {
 		ctrlMtx_.lock();
 		QJsonObject obj = commCtrlQueue_.front();
