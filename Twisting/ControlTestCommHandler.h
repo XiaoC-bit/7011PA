@@ -70,6 +70,7 @@ private:
 	bool readData(CommunicationThread* socket, QString& err);
 
 	typedef struct {
+		qint64 sampleTimeUs;	//采样时间（微秒），从release开始为0
 		double torque;
 	}TestingRawData;
 

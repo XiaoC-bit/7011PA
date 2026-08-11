@@ -53,6 +53,9 @@ public:
         m_modbus->setTimeout(1000);      // 超时 1s
         m_modbus->setNumberOfRetries(3); // 重试3次
 
+        if(m_modbus->state() == QModbusDevice::ConnectedState)
+            return true;
+
         if (!m_modbus->connectDevice()) {
             qWarning() << "连接失败:" << m_modbus->errorString();
             return false;

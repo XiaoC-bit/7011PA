@@ -3,12 +3,13 @@
 #include <qjsonarray.h>
 #include <qjsondocument.h>
 #include <QThread>
-#include <QElapsedTimer>
+#include <chrono>
 ControlTestCommHandler::ControlTestCommHandler(ReadU65Struct& ref, QObject* parent)
 	: CommHandler(ref,parent)
 {
-    //预分配足够多的内存，避免循环读取时频繁扩容
-    testingRawDatas_.reserve(8000);
+    //预分配足够多的内存，避免循环读取时频繁扩容（200次/秒 * 10秒 ≈ 2000，预留2500）
+    //预留两倍空间，避免扩容次数过多
+    testingRawDatas_.reserve(5000);
 }
 
 ControlTestCommHandler::~ControlTestCommHandler()
@@ -1357,12 +1358,17 @@ bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject&
     通过readData，一直读取，保存到testingRawDatas_。
     用一个计时器，一直读取10秒以内的数据。
     testingRawDatas_可以在构造函数中，先reserve创建足够多的内存
+    采样时间从release完成时开始计时为0，单位为微秒(us)，每秒约采样200次
      */
     testingRawDatas_.clear();
-    QElapsedTimer timer;
-    timer.start();
-    while (timer.elapsed() < 10000) {
+    auto startTime = std::chrono::steady_clock::now();
+    const auto tenSeconds = std::chrono::seconds(10);
+    while (true) {
+        auto elapsed = std::chrono::steady_clock::now() - startTime;
+        if (elapsed >= tenSeconds) break;
         if (readData(socket, err)) {
+            testingRawdata_.sampleTimeUs =
+                std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
             testingRawDatas_.push_back(testingRawdata_);
         }
         else {
