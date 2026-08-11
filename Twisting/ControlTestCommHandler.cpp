@@ -3,9 +3,13 @@
 #include <qjsonarray.h>
 #include <qjsondocument.h>
 #include <QThread>
+#include <QElapsedTimer>
 ControlTestCommHandler::ControlTestCommHandler(ReadU65Struct& ref, QObject* parent)
 	: CommHandler(ref,parent)
-{}
+{
+    //预分配足够多的内存，避免循环读取时频繁扩容
+    testingRawDatas_.reserve(8000);
+}
 
 ControlTestCommHandler::~ControlTestCommHandler()
 {
@@ -1354,23 +1358,18 @@ bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject&
     用一个计时器，一直读取10秒以内的数据。
     testingRawDatas_可以在构造函数中，先reserve创建足够多的内存
      */
-   
-
-	// QByteArray buffer;
-	// packPC_KEY(0x05, buffer);
-	// if (!socket->writeData(buffer)) {
-	// 	err = "writeData error " + socket->socketError();
-	// 	return false;
-	// }
-	// QByteArray recvData;
-	// if (!socket->readData(recvData)) {
-	// 	err = "readData error " + socket->socketError();
-	// 	return false;
-	// }
-	// if (!checkSum(recvData)) {
-	// 	err = "readData error ,checksum error";
-	// 	return false;
-	// }
+    testingRawDatas_.clear();
+    QElapsedTimer timer;
+    timer.start();
+    while (timer.elapsed() < 10000) {
+        if (readData(socket, err)) {
+            testingRawDatas_.push_back(testingRawdata_);
+        }
+        else {
+            qDebug() << "readData error:" << err;
+        }
+    }
+    qDebug() << "采集完成，共读取" << testingRawDatas_.size() << "个数据点";
 
     bool ok = false;
     double speed = modbus.readSpeedSync(1, &ok);
