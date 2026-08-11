@@ -342,6 +342,7 @@ void CommunicationThread::otherTimerFunc() {
 		U65RawData info;
 		info.writeData = true;
 		info.datas = testingRawDatas_;
+		info.U65Info = u65Info;
 		emit fireRegularInfo(QVariant::fromValue(info));
 	}
 

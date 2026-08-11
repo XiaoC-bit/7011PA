@@ -1547,11 +1547,12 @@ void DataProcessor::handleRegularInfo(const QVariant& data) {
 
 
 	// ✅ 修复1：用命名占位符，避免位置混淆
-	query.prepare("UPDATE queue SET raw_data = :raw, totalNumber = :total WHERE id = :id");
+	query.prepare("UPDATE queue SET raw_data = :raw, totalNumber = :total,speed= :speed ,status = 2 WHERE id = :id");
 
 	// ✅ 修复2：用 bindValue 明确类型
 	query.bindValue(":raw", QVariant(newBlobData));  // 明确是 BLOB
 	query.bindValue(":total", static_cast<int>(info.datas.size()));
+	query.bindValue(":speed", info.U65Info.speed);
 	query.bindValue(":id", queueId_);   // 明确转为数字类型
 	if (!query.exec()) {
 		qDebug() << "deviceId :  " << deviceId_ << "\t" << query.lastError().text();

@@ -1,4 +1,4 @@
-#include "ReportHandler.h"
+ï»¿#include "ReportHandler.h"
 
 #include <qdebug.h>
 #include <qsqlerror.h>
@@ -242,34 +242,34 @@ bool ReportHandler::exportData(const QSqlDatabase& configDb, const QSqlDatabase&
 		return false;
 	}
 
-	// ÉèÖÃ½Ï´óµÄ»º³åÇø
+	// è®¾ç½®è¾ƒå¤§çš„ç¼“å†²åŒº
 
 	out.setDevice(&file);
 
-	// Ğ´ÈëCSV±íÍ· (Ò»´ÎĞÔĞ´Èë)
+	// å†™å…¥CSVè¡¨å¤´ (ä¸€æ¬¡æ€§å†™å…¥)
 	out << "CT Number,angle,torque,displacement\n";
 
-	// Ó¦ÓÃSQLiteĞÔÄÜÓÅ»¯µÄPRAGMAÖ¸Áî
+	// åº”ç”¨SQLiteæ€§èƒ½ä¼˜åŒ–çš„PRAGMAæŒ‡ä»¤
 	QSqlQuery pragmaQuery(dataDb);
 
-	// ¹Ø±ÕÍ¬²½Ğ´Èë - ËÙ¶ÈÌáÉıµ«½µµÍ°²È«ĞÔ£¬½öÓÃÓÚµ¼³öµÈ·Ç¹Ø¼ü²Ù×÷
+	// å…³é—­åŒæ­¥å†™å…¥ - é€Ÿåº¦æå‡ä½†é™ä½å®‰å…¨æ€§ï¼Œä»…ç”¨äºå¯¼å‡ºç­‰éå…³é”®æ“ä½œ
 	pragmaQuery.exec("PRAGMA synchronous = OFF");
 
-	// ½«ÈÕÖ¾Ä£Ê½¸ü¸ÄÎªÄÚ´æÄ£Ê½
+	// å°†æ—¥å¿—æ¨¡å¼æ›´æ”¹ä¸ºå†…å­˜æ¨¡å¼
 	pragmaQuery.exec("PRAGMA journal_mode = MEMORY");
 
-	// Ôö¼Ó»º´æ´óĞ¡
+	// å¢åŠ ç¼“å­˜å¤§å°
 	pragmaQuery.exec("PRAGMA cache_size = 10000");
 
-	// ¹Ø±ÕÁÙÊ±´æ´¢ÇøÓò - ¼õÉÙ´ÅÅÌI/O
+	// å…³é—­ä¸´æ—¶å­˜å‚¨åŒºåŸŸ - å‡å°‘ç£ç›˜I/O
 	pragmaQuery.exec("PRAGMA temp_store = MEMORY");
 
-	// ¿ªÆô½Ï´óµÄÄÚ´æÓ³Éä
+	// å¼€å¯è¾ƒå¤§çš„å†…å­˜æ˜ å°„
 	pragmaQuery.exec("PRAGMA mmap_size = 30000000000");
 
-	// ¿ªÊ¼ÊÂÎñ
+	// å¼€å§‹äº‹åŠ¡
 
-	const int BATCH_SIZE = 50000; // Ã¿Åú´¦Àí50000Ìõ¼ÇÂ¼
+	const int BATCH_SIZE = 50000; // æ¯æ‰¹å¤„ç†50000æ¡è®°å½•
 	int offset = 0;
 	bool hasMoreData = true;
 	if (1) {
@@ -319,7 +319,7 @@ bool ReportHandler::exportData(const QSqlDatabase& configDb, const QSqlDatabase&
 			return false;
 		}
 
-		// ÊÕ¼¯ÅúÁ¿Êı¾İÈ»ºóÒ»´ÎĞ´Èë
+		// æ”¶é›†æ‰¹é‡æ•°æ®ç„¶åä¸€æ¬¡å†™å…¥
 		QString batchData;
 		int rowCount = 0;
 
@@ -337,23 +337,23 @@ bool ReportHandler::exportData(const QSqlDatabase& configDb, const QSqlDatabase&
 				.arg(AD1);
 		}
 
-		// Ò»´ÎĞÔĞ´ÈëÅúÁ¿Êı¾İ
+		// ä¸€æ¬¡æ€§å†™å…¥æ‰¹é‡æ•°æ®
 		out << batchData;
 
-		// ¼ì²éÊÇ·ñ»¹ÓĞ¸ü¶àÊı¾İ
+		// æ£€æŸ¥æ˜¯å¦è¿˜æœ‰æ›´å¤šæ•°æ®
 		if (rowCount < BATCH_SIZE) {
 			hasMoreData = false;
 		}
 
 		offset += BATCH_SIZE;
 
-		// Ìá¹©½ø¶ÈĞÅÏ¢
+		// æä¾›è¿›åº¦ä¿¡æ¯
 		qDebug() << "Processed" << offset << "records...";
 	}
 
-	// Ìá½»ÊÂÎñ
+	// æäº¤äº‹åŠ¡
 
-	// »Ö¸´SQLiteÄ¬ÈÏÉèÖÃ
+	// æ¢å¤SQLiteé»˜è®¤è®¾ç½®
 	pragmaQuery.exec("PRAGMA synchronous = NORMAL");
 	pragmaQuery.exec("PRAGMA journal_mode = DELETE");
 	pragmaQuery.exec("PRAGMA cache_size = 2000");
@@ -375,7 +375,7 @@ bool ReportHandler::exportData(const QSqlDatabase& configDb, const QSqlDatabase&
 
 bool ReportHandler::fetchReportData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response) {
     QSqlQuery query(dataDb);
-    //ÏÈ²éÑ¯total
+    //å…ˆæŸ¥è¯¢total
 	QString strSql = QString("select count(*) as total from queue where show=1;");
 	if (!query.exec(strSql))
 	{
@@ -424,7 +424,7 @@ bool ReportHandler::fetchReportData(const QSqlDatabase& db, const QSqlDatabase& 
 	QJsonArray jsonColumns;
 	QSet<QString> columnSet;
 	jsonColumns.push_back("queue_id");
-	//ÔÙ²éÑ¯Êı¾İ
+	//å†æŸ¥è¯¢æ•°æ®
 	for (auto it = queueIdSet.begin(); it != queueIdSet.end(); it++)
 	{
 		QJsonObject jsonQueueObj;
@@ -474,7 +474,7 @@ bool ReportHandler::fetchReportData(const QSqlDatabase& db, const QSqlDatabase& 
 
 
 void ReportHandler::sumupQueue(const QSqlDatabase& configDb, const QSqlDatabase& testDataDb) {
-	//¶ÁÈ¡report_setting
+	//è¯»å–report_setting
 	QString strSql = QString("select * from report_setting ");
 	QSqlQuery configQuery(configDb);
 	if (!configQuery.exec(strSql)) {
@@ -501,26 +501,26 @@ void ReportHandler::sumupQueue(const QSqlDatabase& configDb, const QSqlDatabase&
 	};
 
 
-	std::pair<double, double> torqueToAnglePair;//×î´óÅ¤¾Ø¶ÔÓ¦µÄ½Ç¶È
-	std::pair<double, double> angleToTorquePair;//×î´ó½Ç¶È¶ÔÓ¦µÄÅ¤¾Ø
+	std::pair<double, double> torqueToAnglePair;//æœ€å¤§æ‰­çŸ©å¯¹åº”çš„è§’åº¦
+	std::pair<double, double> angleToTorquePair;//æœ€å¤§è§’åº¦å¯¹åº”çš„æ‰­çŸ©
 	torqueToAnglePair.first = 0;
 	torqueToAnglePair.second = 0;
 	angleToTorquePair.first = 0;
 	angleToTorquePair.second = 0;
 
 	typedef std::vector< _TEST_DATA> TEST_DATA_VEC;
-	QMap<int, TEST_DATA_VEC> ReportTorqueToAngle;//intÊÇÑ­»·´ÎÊı  µÚ¶ş¸öÔªËØÊÇ¼ÇÂ¼ËùÓĞĞèÒªÕÒµÄÅ¤¾Ø¶ÔÓ¦µÄ½Ç¶È
-	QMap<int, TEST_DATA_VEC> ReportAngleToTorque;//intÊÇÑ­»·´ÎÊı  µÚ¶ş¸öÔªËØÊÇ¼ÇÂ¼ËùÓĞĞèÒªÕÒµÄ½Ç¶È¶ÔÓ¦µÄÅ¤¾Ø
-	QMap<int, TEST_DATA_VEC> ReportStiffnessAngle;//intÊÇÑ­»·´ÎÊı  µÚ¶ş¸öÔªËØÊÇ¼ÇÂ¼ËùÓĞĞèÒªÕÒµÄÅ¤×ª¸Õ¶È
+	QMap<int, TEST_DATA_VEC> ReportTorqueToAngle;//intæ˜¯å¾ªç¯æ¬¡æ•°  ç¬¬äºŒä¸ªå…ƒç´ æ˜¯è®°å½•æ‰€æœ‰éœ€è¦æ‰¾çš„æ‰­çŸ©å¯¹åº”çš„è§’åº¦
+	QMap<int, TEST_DATA_VEC> ReportAngleToTorque;//intæ˜¯å¾ªç¯æ¬¡æ•°  ç¬¬äºŒä¸ªå…ƒç´ æ˜¯è®°å½•æ‰€æœ‰éœ€è¦æ‰¾çš„è§’åº¦å¯¹åº”çš„æ‰­çŸ©
+	QMap<int, TEST_DATA_VEC> ReportStiffnessAngle;//intæ˜¯å¾ªç¯æ¬¡æ•°  ç¬¬äºŒä¸ªå…ƒç´ æ˜¯è®°å½•æ‰€æœ‰éœ€è¦æ‰¾çš„æ‰­è½¬åˆšåº¦
 	while (configQuery.next())
 	{
 		QString name = configQuery.value("name").toString();
-		//Èç¹ûÇ°Ãæ×Ö·û´®ÊÇ"torque"
+		//å¦‚æœå‰é¢å­—ç¬¦ä¸²æ˜¯"torque"
 		if (name.startsWith("torque-")) {
-			//È¥µôÇ°Ãæ×Ö·û´®
+			//å»æ‰å‰é¢å­—ç¬¦ä¸²
 			name = name.remove(0, 7);
 
-			//Ê£ÏÂµÄ¸ñÊ½ÊÇ 1-2  ÌáÈ¡ÕâÁ½¸öÊı×Ö£¬¿ÉÄÜÊÇĞ¡Êı
+			//å‰©ä¸‹çš„æ ¼å¼æ˜¯ 1-2  æå–è¿™ä¸¤ä¸ªæ•°å­—ï¼Œå¯èƒ½æ˜¯å°æ•°
 			QStringList list = name.split("-");
 			if (list.size() != 2) {
 				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
@@ -543,11 +543,11 @@ void ReportHandler::sumupQueue(const QSqlDatabase& configDb, const QSqlDatabase&
 			testData.torque = torque;
 			ReportTorqueToAngle[twistCount].push_back(testData);
 		}
-		//Èç¹ûÇ°Ãæ×Ö·û´®ÊÇ"angle"
+		//å¦‚æœå‰é¢å­—ç¬¦ä¸²æ˜¯"angle"
 		else if (name.startsWith("angle-")) {
-			//È¥µôÇ°Ãæ×Ö·û´®
+			//å»æ‰å‰é¢å­—ç¬¦ä¸²
 			name = name.remove(0, 6);
-			//Ê£ÏÂµÄ¸ñÊ½ÊÇ 1-2  ÌáÈ¡ÕâÁ½¸öÊı×Ö£¬¿ÉÄÜÊÇĞ¡Êı
+			//å‰©ä¸‹çš„æ ¼å¼æ˜¯ 1-2  æå–è¿™ä¸¤ä¸ªæ•°å­—ï¼Œå¯èƒ½æ˜¯å°æ•°
 			QStringList list = name.split("-");
 			if (list.size() != 2) {
 				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
@@ -570,11 +570,11 @@ void ReportHandler::sumupQueue(const QSqlDatabase& configDb, const QSqlDatabase&
 			testData.angle = angle;
 			ReportAngleToTorque[twistCount].push_back(testData);
 		}
-		//Èç¹ûÇ°Ãæ×Ö·û´®ÊÇ"stiffness"
+		//å¦‚æœå‰é¢å­—ç¬¦ä¸²æ˜¯"stiffness"
 		else if (name.startsWith("stiffness-")) {
-			//È¥µôÇ°Ãæ×Ö·û´®
+			//å»æ‰å‰é¢å­—ç¬¦ä¸²
 			name = name.remove(0, 10);
-			//Ê£ÏÂµÄ¸ñÊ½ÊÇ 1-2  ÌáÈ¡ÕâÁ½¸öÊı×Ö£¬¿ÉÄÜÊÇĞ¡Êı
+			//å‰©ä¸‹çš„æ ¼å¼æ˜¯ 1-2  æå–è¿™ä¸¤ä¸ªæ•°å­—ï¼Œå¯èƒ½æ˜¯å°æ•°
 			QStringList list = name.split("-");
 			if (list.size() != 3) {
 				qDebug() << "deviceId :  " << deviceId_ << "\t" << QStringLiteral("stiffness error");
@@ -614,7 +614,7 @@ void ReportHandler::sumupQueue(const QSqlDatabase& configDb, const QSqlDatabase&
 		testMode = configQuery.value("mode").toString();
 	}
 
-	QVector< TwistingData> vecTwistingData_;// ¼ÇÂ¼µ±Ç°µÄ²âÊÔÊı¾İ
+	QVector< TwistingData> vecTwistingData_;// è®°å½•å½“å‰çš„æµ‹è¯•æ•°æ®
 
 	QMap<int, std::vector<TwistingData>> perTwistingData;
 	{
@@ -662,7 +662,7 @@ void ReportHandler::sumupQueue(const QSqlDatabase& configDb, const QSqlDatabase&
 				}
 
 				vecTwistingData_.push_back(twistingData);
-				//½«²»Í¬µÄtwistCount£¬´æÈëperTwistingData
+				//å°†ä¸åŒçš„twistCountï¼Œå­˜å…¥perTwistingData
 				auto it = perTwistingData.find(twistingData.twistCount);
 				if (it == perTwistingData.end()) {
 					perTwistingData[twistingData.twistCount] = std::vector<TwistingData>();
@@ -682,8 +682,8 @@ void ReportHandler::sumupQueue(const QSqlDatabase& configDb, const QSqlDatabase&
 		lastTorque = vecTwistingData_.at(0).torque;
 	}
 
-	//Êı¾İÊÇÀàËÆÒ»¸ösin²¨ĞÎ£¬¸ù¾İ´ËÊôĞÔ£¬ÕÒµ½¶ÔÓ¦µÄ±¨¸æÊı¾İ
-	//Ò»¿ªÊ¼µÄÅ¤¾ØºÍ½Ç¶È¶¼ÊÇ0
+	//æ•°æ®æ˜¯ç±»ä¼¼ä¸€ä¸ªsinæ³¢å½¢ï¼Œæ ¹æ®æ­¤å±æ€§ï¼Œæ‰¾åˆ°å¯¹åº”çš„æŠ¥å‘Šæ•°æ®
+	//ä¸€å¼€å§‹çš„æ‰­çŸ©å’Œè§’åº¦éƒ½æ˜¯0
 	for (auto& it : vecTwistingData_) {
 
 		int twistCount = it.twistCount;
@@ -708,11 +708,11 @@ void ReportHandler::sumupQueue(const QSqlDatabase& configDb, const QSqlDatabase&
 
 
 	{
-		//²åÈë½Ç¶È×î´óÖµ
+		//æ’å…¥è§’åº¦æœ€å¤§å€¼
 		strSql = QString("insert into result(queue_id,name,data) values(%1,'maxAngleToTorque',%2)").arg(229).arg(angleToTorquePair.second);
 
 		
-		//²åÈëÅ¤¾Ø×î´óÖµ
+		//æ’å…¥æ‰­çŸ©æœ€å¤§å€¼
 		strSql = QString("insert into result(queue_id,name,data) values(%1,'maxTorqueToAngle',%2)").arg(229).arg(torqueToAnglePair.second);
 		
 	}
@@ -724,8 +724,7 @@ void ReportHandler::sumupQueue(const QSqlDatabase& configDb, const QSqlDatabase&
 bool ReportHandler::liveTestingData(const QSqlDatabase& configDb, const QSqlDatabase& dataDb, const QJsonObject &recvObj, QString &response)
 {
     QSqlQuery testQuery(dataDb);
-	//sumupQueue(configDb, dataDb);
-    int queueId  =0;
+    int queueId  =0; 
 	QString strSql = QString("select * from queue where current=1");
 	if (!testQuery.exec(strSql)) {
 		qDebug() << "Failed to fetch data:";
@@ -742,85 +741,18 @@ bool ReportHandler::liveTestingData(const QSqlDatabase& configDb, const QSqlData
 	}
 	queueId = testQuery.value("id").toInt();
 
-	strSql = QString("select * from detail where queue_id=%1;").arg(queueId);
-	if (!testQuery.exec(strSql)) {
-		qDebug() << "Failed to fetch data:";
-		qDebug() << testQuery.lastError().text();
-		return false;
-	}
-	size_t total = 0;
-	QByteArray data;
-	QDataStream stream(&data, QIODevice::ReadWrite);
-	if (testQuery.next()) {
-		total = testQuery.value("totalNumber").toInt();
-		data = testQuery.value("data").toByteArray();
-		
-	}
-	
+	size_t total = testQuery.value("totalNumber").toInt();
+	QByteArray data = testQuery.value("raw_data").toByteArray();
 
-	const int DATA_COUNT = 5000;//±£ÁôÑù±¾ÊıÁ¿
+	const int DATA_COUNT = 5000;
 
     QJsonArray array;
 
-	std::vector<ExamplePoint> points;
-
+	QDataStream stream(data);
 	for (size_t i = 0; i < total; i++) {
-		ExamplePoint point;
-		float AD1, AD2, YZ_MM, time;
-		int c1, c2;
-		stream >> AD1 >> AD2 >> YZ_MM >> time >> c1 >> c2;
-		point.AD1 = AD1;
-		point.AD2 = AD2;
-		point.YZ_mm = YZ_MM;
-		point.time = time;
-
-
-		points.push_back(point);
-	}
-
-   /* while (testQuery.next()) {
-
-		ExamplePoint point;
-		point.AD1 = testQuery.value("AD1").toDouble();
-		point.AD2 = testQuery.value("AD2").toDouble();
-		point.YZ_mm = testQuery.value("YZ_mm").toDouble();
-		point.time = testQuery.value("flow_number").toDouble();
-		points.push_back(point);
-		continue;
-    }*/
-	if (0) {
-
-		//²»¹ıÂË
-		
-		for (auto& it : points) {
-			QJsonObject object;
-			object["id"] = it.time;
-			object["AD1"] = it.AD1;
-			object["AD2"] = it.AD2;
-			object["YZ_mm"] = it.YZ_mm;
-			array.append(object);
-		}
-	}
-	else {
-		total = points.size();
-		if (total > DATA_COUNT) {
-			total = DATA_COUNT;
-		}
-
-		std::vector<ExamplePoint> outPoints1;
-		std::vector<ExamplePoint> outPoints2;
-		LttbAD2_YZmm::Downsample(points.begin(), points.size(), std::back_inserter(outPoints1), total);
-		LttbAD2_AD1::Downsample(points.begin(), points.size(), std::back_inserter(outPoints2), total);
-
-		auto merged = mergeAndSortPoints(outPoints1, outPoints2, true); // È¥ÖØºÏ²¢
-		for (auto& it : merged) {
-			QJsonObject object;
-			object["id"] = it.time;
-			object["AD1"] = it.AD1;
-			object["AD2"] = it.AD2;
-			object["YZ_mm"] = it.YZ_mm;
-			array.append(object);
-		}
+		qint64 sampleTimeUs;
+		double torque;
+		stream >> sampleTimeUs >> torque;
 	}
 	
 
@@ -850,7 +782,7 @@ bool ReportHandler::fetchTestHistoryDetail(const QSqlDatabase& db, const QSqlDat
 	size_t total = 0;
 	int mod = 0;
 
-	const int DATA_COUNT = 5000;//±£ÁôÑù±¾ÊıÁ¿
+	const int DATA_COUNT = 5000;//ä¿ç•™æ ·æœ¬æ•°é‡
 	std::vector<ExamplePoint> points;
 	QString strSql = QString("select * from detail where queue_id = %1 ;").arg(recvObj["req_queue_id"].toInt());
 	if (!testQuery.exec(strSql)) {
@@ -889,7 +821,7 @@ bool ReportHandler::fetchTestHistoryDetail(const QSqlDatabase& db, const QSqlDat
 
 
 	if (0) {
-		//²»¹ıÂË
+		//ä¸è¿‡æ»¤
 
 		for (auto& it : points) {
 			QJsonObject object;
@@ -911,7 +843,7 @@ bool ReportHandler::fetchTestHistoryDetail(const QSqlDatabase& db, const QSqlDat
 		LttbAD2_YZmm::Downsample(points.begin(), points.size(), std::back_inserter(outPoints1), total);
 		LttbAD2_AD1::Downsample(points.begin(), points.size(), std::back_inserter(outPoints2), total);
 
-		auto merged = mergeAndSortPoints(outPoints1, outPoints2, true); // È¥ÖØºÏ²¢
+		auto merged = mergeAndSortPoints(outPoints1, outPoints2, true); // å»é‡åˆå¹¶
 		for (auto& it : merged) {
 			QJsonObject object;
 			object["id"] = it.time;
@@ -949,7 +881,7 @@ bool ReportHandler::fetchHistoryData(const QSqlDatabase& db, const QSqlDatabase&
 
 
 	QSqlQuery query(methodDb);
-	//ÏÈ²éÑ¯total
+	//å…ˆæŸ¥è¯¢total
 	QString strSql = QString("select count(*) as total from queue ;");
 	if (!strGroup.isEmpty()) {
 		strSql = QString("select count(*) as total from queue where remarks = '%1' ;").arg(strGroup);
@@ -1010,7 +942,7 @@ bool ReportHandler::fetchHistoryData(const QSqlDatabase& db, const QSqlDatabase&
 		jsonQueueObj["lab_temperature"] = query.value("lab_temperature").toDouble();
 		jsonQueueObj["lab_humidity"] = query.value("lab_humidity").toDouble();
 		jsonQueueObj["specimen_number"] = query.value("specimen_number").toString();
-		QString group = query.value("remarks").toString();//°Ñremarks×÷Îª·Ö×éÒÀ¾İ
+		QString group = query.value("remarks").toString();//æŠŠremarksä½œä¸ºåˆ†ç»„ä¾æ®
 		jsonQueueObj["remarks"] = group;
 		if (!groupSet.contains(group))
 		{
@@ -1087,7 +1019,7 @@ bool ReportHandler::fetchReportHistoryData(const QSqlDatabase& db, const QSqlDat
 	QJsonArray jsonColumns;
 	QSet<QString> columnSet;
 	jsonColumns.push_back("queue_id");
-	//ÔÙ²éÑ¯Êı¾İ
+	//å†æŸ¥è¯¢æ•°æ®
 	for (auto it = queueIdSet.begin(); it != queueIdSet.end(); it++)
 	{
 		QJsonObject jsonQueueObj;
@@ -1151,9 +1083,9 @@ bool ReportHandler::handleWsMsg(QJsonObject &recvObj, QString &response)
     auto type = recvObj["__type"];
     if (type == "live-testing-data")
     {
-		//¼ÆËãºÄÊ±
-		QElapsedTimer timer;
-		timer.start();
+		//è®¡ç®—è€—æ—¶
+		//QElapsedTimer timer;
+		//timer.start();
 		//qDebug() << "start time: " << timer.elapsed();
 		bool ret = liveTestingData(configDb, testDataDb, recvObj, response);
 		//qDebug() << "end time: " << timer.elapsed();

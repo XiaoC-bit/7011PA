@@ -1396,7 +1396,7 @@ bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject&
         err = "modbus 读速度失败";
         return false;
     }
-
+    U65Info_.speed = speed;
 
 	return true;
 }

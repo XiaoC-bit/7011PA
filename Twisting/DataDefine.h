@@ -134,6 +134,7 @@ struct ReadU65Struct
 	double Wave[1024];
 
 	double TEST_TM_MS;//小数点后的秒数
+	double speed;
 
 	unsigned char CartDetail[15][16], MasterDetail[8], PannelDetail[8];
 	unsigned short IP[8];
