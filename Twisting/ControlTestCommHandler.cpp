@@ -34,7 +34,7 @@ bool ControlTestCommHandler::commFunc(CommunicationThread* socket, QJsonObject& 
 	else if (type == "start-test") {
 		bool ret=  startTest(socket, obj, err);
         QJsonObject responseObj;
-        responseObj["__channel"] = obj["__channel"];
+        responseObj["__channel"] = "data-testing-message";
         responseObj["__type"] = obj["__type"];
         if(ret){
 
