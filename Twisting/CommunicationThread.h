@@ -140,6 +140,8 @@ private:
     int deviceId_;
 
     ReadU65Struct u65Info;
+
+    std::atomic<bool> running_;
 };
 
 #endif // COMMUNICATIONTHREAD_H

@@ -13,7 +13,7 @@
 
 CommunicationThread::CommunicationThread(QObject* parent) : QThread(parent), m_socket(nullptr), m_sendTimer(nullptr), recNum1_(0), powerOn_(true)
 {
-
+	running_ = false;
 	commHandlers_["normal-message"] = new NormalCommHandler(u65Info, this);//常规通讯
 	commHandlers_["control-message"] = new ControlTestCommHandler(u65Info, this);//常规通讯
 	commHandlers_["pid-message"] = new PIDCommHandler(u65Info, this);//常规通讯
@@ -25,6 +25,10 @@ CommunicationThread::CommunicationThread(QObject* parent) : QThread(parent), m_s
 
 CommunicationThread::~CommunicationThread()
 {
+	running_ = false;
+
+	wait();
+
 	if (m_socket) {
 		m_socket->deleteLater();
 	}
@@ -52,44 +56,28 @@ void CommunicationThread::run()
 
 	if (m_socket->state() != QAbstractSocket::ConnectedState) {
 		m_socket->setProxy(QNetworkProxy::NoProxy);//对于开了VPN的机器，需要设置此项
-#ifdef _DEBUG
 		m_socket->connectToHost(m_deviceAddress, m_port);
 		if (!m_socket->waitForConnected()) {
 			qDebug() << m_socket->errorString();
 		}
-#else
-		m_socket->connectToHost(m_deviceAddress, m_port);
-		if (!m_socket->waitForConnected()) {
-			qDebug() << m_socket->errorString();
-		}
-#endif
 	}
 
-	if (m_sendTimer == nullptr) {
-		//在子线程中创建对象，不要指定parent，否则会报错：在子线程中创建了子对象，而父对象却在另一个线程
-		m_sendTimer = new QTimer();
+	running_ = true;
+	while (running_) {
+		this->timerFunc();
 
-		//不要直接建立信号槽函数到CommunicationThread，这样会在主线程执行
-		// 我们需要在子线程中执行
-	   // connect(m_sendTimer, &QTimer::timeout, this, &CommunicationThread::timerFunc);
-		QObject::connect(m_sendTimer, &QTimer::timeout, [&]() {
-			this->timerFunc();
-			});
-
-		connect(this, SIGNAL(startTimer()), m_sendTimer, SLOT(start()));
-		connect(this, SIGNAL(stopTimer()), m_sendTimer, SLOT(stop()));
+		// 关键：这里必须有短暂让出，否则会跑满一个CPU核心，
+		// 且完全无法响应停止请求（如果timerFunc内部阻塞的话）
+		QThread::msleep(1); // 或者更小，看你实时性要求，1~5ms通常够用
 	}
-	//每600ms读取一次数据，可能有其他通讯任务，将定时器间隔设置小一点
-	//读取历史资料区的话，可以不用这么频繁，待优化
-	m_sendTimer->setInterval(5);
-	m_sendTimer->start();
 
-	exec(); // Start event loop
+	// 退出循环，做清理
+	if (m_socket->state() == QAbstractSocket::ConnectedState) {
+		m_socket->disconnectFromHost();
+	}
 
-	//退出循环前断开连接
-	if (m_sendTimer->isActive())
-		m_sendTimer->stop();
-	m_socket->disconnectFromHost();
+
+	return;
 }
 
 bool CommunicationThread::writeData(const QByteArray& data)
@@ -357,6 +345,7 @@ void CommunicationThread::timerFunc()
 {
 #ifdef _DEBUG
 #endif
+	auto tid = QThread::currentThread()->currentThreadId();
 	if (!commCtrlQueue_.empty()) {
 		ctrlMtx_.lock();
 		QJsonObject obj = commCtrlQueue_.front();
@@ -383,42 +372,13 @@ void CommunicationThread::timerFunc()
 		obj["__channel"] = "normal-message";
 		obj["__type"] = "real-data";
 		obj["__deviceId"] = deviceId_;
-#ifdef _DEBUG
-		//用来测试单位显示
-		//obj["connectErr"] = false;
-		//obj["sStar"] = 10;
-		//obj["sQuotation"] = 10;
-		//obj["sDoubleQuotation"] = 10;
-		//obj["upperTemp"] = 10;
-		//obj["lowerTemp"] = 10;
-
-		//obj["torque"] = 1.1;//扭转机  扭矩
-		//obj["angle"] = 2.2;//扭转机  扭矩
-		//obj["axialDisplacement"] = 3.3;//扭转机  轴向位移
-
-		//obj["twistCount"] = 4;//扭转机  轴向位移
-		//obj["testTimer"] = 3389;//扭转机  轴向位移
 		obj["connectErr"] = true;
-#else
-		obj["connectErr"] = true;
-#endif
-		
 		looseFireRealData(obj);
 
-#ifdef _DEBUG
-		if (1) {
-			m_socket->connectToHost(m_deviceAddress, m_port);
-			if (!m_socket->waitForConnected()) {
-				//log(m_deviceAddress, m_socket->errorString());
-			}
-		}
-		
-#else
 		m_socket->connectToHost(m_deviceAddress, m_port);
 		if (!m_socket->waitForConnected()) {
 			//log(m_deviceAddress, m_socket->errorString());
 		}
-#endif
 
 		if (!writeQueue_.empty()) {
 			QJsonObject obj;
@@ -472,7 +432,6 @@ void CommunicationThread::looseFireRealData(const QJsonObject& obj) {
 	emit wsResponse(obj);
 }
 
-unsigned __int64 lastSendRealData_;
 
 void CommunicationThread::log(const QString& str) {
 	if (m_socket->state() == QAbstractSocket::ConnectedState) {
