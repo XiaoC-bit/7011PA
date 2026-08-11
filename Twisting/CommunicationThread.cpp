@@ -330,6 +330,10 @@ void CommunicationThread::otherTimerFunc() {
 
 		qDebug()<<"Error channel\t" <<  channel<<"\ttype\t" << type;
 		log(m_deviceAddress, strErr);
+
+		if (type == "start-test") {
+			emit wsResponse(obj);
+		}
 		return;
 		// m_socket->disconnectFromHost();
 	}

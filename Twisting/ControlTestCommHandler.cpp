@@ -1345,6 +1345,8 @@ bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject&
         err = "modbusSerialPort error";
         return false;
     }
+
+    TemiSp3Modbus modbus;
     if (!modbus.open(modbusSerialPort, 19200)) {
         err = "open modbus serial port error";
         return false;
@@ -1386,7 +1388,7 @@ bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject&
             err = "readData error:" + err;
         }
     }
-    qDebug() << "采集完成，共读取" << testingRawDatas_.size() << "个数据点";
+
 
     bool ok = false;
     double speed = modbus.readSpeedSync(1, &ok);

@@ -1532,9 +1532,6 @@ void DataProcessor::handleRegularInfo(const QVariant& data) {
 		stream << sampleTimeUs << torque;
 	}
 
-	QByteArray sqldata = QByteArray();
-
-	sqldata.append(newBlobData);
 
 	QSqlDatabase testDataDb;
 	if (!getTestDataDB(testDataDb)) {
@@ -1542,15 +1539,24 @@ void DataProcessor::handleRegularInfo(const QVariant& data) {
 		return;
 	}
 	QSqlQuery query(testDataDb);
-	query.prepare("update queue set raw_data = ?,totalNumber =? where queue_id = ?");
-	query.addBindValue(sqldata);
-	query.addBindValue(info.datas.size());
-	query.addBindValue(queueId_);
+	//query.prepare("update queue set raw_data = ?,totalNumber =? where queue_id = ?");
+	//query.addBindValue(newBlobData);
+	//query.addBindValue(static_cast<int>(info.datas.size()));     // 如果数据量不超过 21亿
+	//query.addBindValue(queueId_);
+	
+
+
+	// ✅ 修复1：用命名占位符，避免位置混淆
+	query.prepare("UPDATE queue SET raw_data = :raw, totalNumber = :total WHERE id = :id");
+
+	// ✅ 修复2：用 bindValue 明确类型
+	query.bindValue(":raw", QVariant(newBlobData));  // 明确是 BLOB
+	query.bindValue(":total", static_cast<int>(info.datas.size()));
+	query.bindValue(":id", queueId_);   // 明确转为数字类型
 	if (!query.exec()) {
 		qDebug() << "deviceId :  " << deviceId_ << "\t" << query.lastError().text();
 		return;
 	}
-
 
 	return;
 

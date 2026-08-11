@@ -77,5 +77,4 @@ private:
 	//单个写入DF SET
 	bool perSetDfSet(CommunicationThread* socket, DF_SET& df_set, QString& err);
 
-	TemiSp3Modbus modbus;
 };
