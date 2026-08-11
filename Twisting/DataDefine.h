@@ -11,6 +11,10 @@ struct Config{
 };
 
 
+typedef struct {
+    qint64 sampleTimeUs;	//采样时间（微秒），从release开始为0
+    double torque;
+}TestingRawData;
 
 typedef struct
 {
@@ -192,6 +196,9 @@ struct U65RawData {
 
 	TwistingData twistingData;
 
+	std::vector< TestingRawData> datas;
+	bool writeData;
+
 	U65RawData() {
 		sStar = 0.0;
 		sQuotation = 0.0;
@@ -203,6 +210,7 @@ struct U65RawData {
 		time = 0.0;
 		angle = 0.0;
 		stepNo = 0;
+		writeData = false;
 	}
 
 	bool isTesting() const {

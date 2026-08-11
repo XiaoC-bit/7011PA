@@ -1511,12 +1511,53 @@ bool DataProcessor::beginInternalTest() {
 * @param data
 */
 void DataProcessor::handleRegularInfo(const QVariant& data) {
+
+	//转换数据类型
+	U65RawData info = data.value<U65RawData>();
+	if (!info.writeData) {
+		return;
+	}
+
+	if (!beginInternalTest()) {
+		return;
+	}
+
+
+	// 3. 序列化新数据
+	QByteArray newBlobData;
+	QDataStream stream(&newBlobData, QIODevice::WriteOnly);
+	for (size_t i = 0; i < info.datas.size(); i++) {
+		qint64 sampleTimeUs = info.datas.at(i).sampleTimeUs;
+		double torque = info.datas.at(i).torque;
+		stream << sampleTimeUs << torque;
+	}
+
+	QByteArray sqldata = QByteArray();
+
+	sqldata.append(newBlobData);
+
+	QSqlDatabase testDataDb;
+	if (!getTestDataDB(testDataDb)) {
+		qDebug() << "getTestDataDB";
+		return;
+	}
+	QSqlQuery query(testDataDb);
+	query.prepare("update queue set raw_data = ?,totalNumber =? where queue_id = ?");
+	query.addBindValue(sqldata);
+	query.addBindValue(info.datas.size());
+	query.addBindValue(queueId_);
+	if (!query.exec()) {
+		qDebug() << "deviceId :  " << deviceId_ << "\t" << query.lastError().text();
+		return;
+	}
+
+
+	return;
+
 #ifdef _DEBUG
 	//sumupQueue();
 #endif
 	// 
-	//转换数据类型
-	U65RawData info = data.value<U65RawData>();
 
 	//更新本次循环的状态
 	curDoorStatus_ = ((info.U65Info.U65_MSG3 >> 9) & 0x01) ? DOOR_STATUS::CLOSE : DOOR_STATUS::OPEN;

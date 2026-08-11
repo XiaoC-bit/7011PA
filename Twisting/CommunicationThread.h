@@ -57,6 +57,9 @@ private:
      */
     void looseFireRealData(const QJsonObject& obj);
 
+
+    std::vector<TestingRawData> testingRawDatas_;
+
     unsigned __int64 lastSendRealData_;
     //处理通讯控制消息
     void handleCommCtrlMsg(const QJsonObject& obj);

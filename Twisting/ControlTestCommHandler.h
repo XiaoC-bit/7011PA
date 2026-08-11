@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <vector>
+#include "DataDefine.h"
 
 #include "CommHandler.h"
 #include "TemiSp3Modbus.h"
@@ -11,11 +12,12 @@ class ControlTestCommHandler  : public CommHandler
 	Q_OBJECT
 
 public:
-	ControlTestCommHandler(ReadU65Struct& ref, QObject *parent);
+	ControlTestCommHandler(ReadU65Struct& ref, std::vector<TestingRawData>&datas, QObject *parent);
 	~ControlTestCommHandler();
 
 	[[nodiscard]] bool commFunc(CommunicationThread* socket, QJsonObject& obj, QString& err)  override;
 
+	std::vector<TestingRawData> &testingRawDatas_;
 private:
 	bool transferMehod(CommunicationThread* socket, QJsonObject& obj, QString& err);
 
@@ -64,19 +66,14 @@ private:
 	bool setAD2_DIR(CommunicationThread* socket, QJsonObject& obj, QString& err);
 	bool setAD1_UPDN(CommunicationThread* socket, QJsonObject& obj, QString& err);
 	bool setAD2_UPDN(CommunicationThread* socket, QJsonObject& obj, QString& err);
-	
 private:
 
 	bool readData(CommunicationThread* socket, QString& err);
 
-	typedef struct {
-		qint64 sampleTimeUs;	//采样时间（微秒），从release开始为0
-		double torque;
-	}TestingRawData;
+	
 
 	TestingRawData testingRawdata_;
 
-	std::vector<TestingRawData> testingRawDatas_;
 	//单个写入DF SET
 	bool perSetDfSet(CommunicationThread* socket, DF_SET& df_set, QString& err);
 

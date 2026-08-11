@@ -13,9 +13,10 @@
 
 CommunicationThread::CommunicationThread(QObject* parent) : QThread(parent), m_socket(nullptr), m_sendTimer(nullptr), recNum1_(0), powerOn_(true)
 {
+	testingRawDatas_.reserve(6000);
 	running_ = false;
 	commHandlers_["normal-message"] = new NormalCommHandler(u65Info, this);//常规通讯
-	commHandlers_["control-message"] = new ControlTestCommHandler(u65Info, this);//常规通讯
+	commHandlers_["control-message"] = new ControlTestCommHandler(u65Info, testingRawDatas_, this);//常规通讯
 	commHandlers_["pid-message"] = new PIDCommHandler(u65Info, this);//常规通讯
 
 	useRealTime_ = false;
@@ -335,6 +336,8 @@ void CommunicationThread::otherTimerFunc() {
 
 	if (type == "start-test") {
 		U65RawData info;
+		info.writeData = true;
+		info.datas = testingRawDatas_;
 		emit fireRegularInfo(QVariant::fromValue(info));
 	}
 

@@ -4,12 +4,9 @@
 #include <qjsondocument.h>
 #include <QThread>
 #include <chrono>
-ControlTestCommHandler::ControlTestCommHandler(ReadU65Struct& ref, QObject* parent)
-	: CommHandler(ref,parent)
+ControlTestCommHandler::ControlTestCommHandler(ReadU65Struct& ref, std::vector<TestingRawData>& datas, QObject* parent)
+	: testingRawDatas_(datas),CommHandler(ref,parent)
 {
-    //预分配足够多的内存，避免循环读取时频繁扩容（200次/秒 * 10秒 ≈ 2000，预留2500）
-    //预留三倍空间，避免扩容次数过多
-    testingRawDatas_.reserve(6000);
 }
 
 ControlTestCommHandler::~ControlTestCommHandler()
