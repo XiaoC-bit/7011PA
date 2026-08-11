@@ -8,8 +8,8 @@ ControlTestCommHandler::ControlTestCommHandler(ReadU65Struct& ref, QObject* pare
 	: CommHandler(ref,parent)
 {
     //预分配足够多的内存，避免循环读取时频繁扩容（200次/秒 * 10秒 ≈ 2000，预留2500）
-    //预留两倍空间，避免扩容次数过多
-    testingRawDatas_.reserve(5000);
+    //预留三倍空间，避免扩容次数过多
+    testingRawDatas_.reserve(6000);
 }
 
 ControlTestCommHandler::~ControlTestCommHandler()
@@ -32,7 +32,21 @@ bool ControlTestCommHandler::commFunc(CommunicationThread* socket, QJsonObject& 
 		return reSpin(socket, obj, err);
 	}
 	else if (type == "start-test") {
-		return startTest(socket, obj, err);
+		bool ret=  startTest(socket, obj, err);
+        QJsonObject responseObj;
+        responseObj["__channel"] = obj["__channel"];
+        responseObj["__type"] = obj["__type"];
+        if(ret){
+
+            responseObj["status"] = "success";
+            obj = responseObj;
+        }
+        else{
+            responseObj["status"] = "error";
+            responseObj["error"] = err;
+            obj = responseObj;
+        }
+        return ret;
 	}
 	else if (type == "prepare-test") {
 		return prepareTest(socket, obj, err);
@@ -1331,17 +1345,17 @@ bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject&
     QString modbusSerialPort = obj.value("modbusSerialPort").toString();
     if (modbusSerialPort.isEmpty())
     {
-        qDebug() << "modbusSerialPort error";
+        err = "modbusSerialPort error";
         return false;
     }
     if (!modbus.open(modbusSerialPort, 19200)) {
-        qDebug() << "open modbus serial port error";
+        err = "open modbus serial port error";
         return false;
 	}
 
     //Modbus RTU 启动监听
     if (!modbus.startTestSync(1)) {
-		qDebug() << "启动测试失败，跳过读速度";
+		err = "startTestSync error";
 		return false;
 	}
 
@@ -1349,7 +1363,7 @@ bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject&
     QThread::msleep(1500);
 
     if (!release(socket, obj, err)) {
-        qDebug() << "release error";
+        err = "release error";
         return false;
     }
 
@@ -1368,21 +1382,21 @@ bool ControlTestCommHandler::startTest(CommunicationThread* socket, QJsonObject&
         if (elapsed >= tenSeconds) break;
         if (readData(socket, err)) {
             testingRawdata_.sampleTimeUs =
-                std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+                std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
             testingRawDatas_.push_back(testingRawdata_);
         }
         else {
-            qDebug() << "readData error:" << err;
+            err = "readData error:" + err;
         }
     }
     qDebug() << "采集完成，共读取" << testingRawDatas_.size() << "个数据点";
 
     bool ok = false;
     double speed = modbus.readSpeedSync(1, &ok);
-    if (ok)
-        qDebug() << "速度:" << speed << "m/s";
-    else
-        qDebug() << "读速度失败";
+    if(!ok){
+        err = "modbus 读速度失败";
+        return false;
+    }
 
 
 	return true;
