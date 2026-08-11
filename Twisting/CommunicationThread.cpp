@@ -317,6 +317,7 @@ void CommunicationThread::otherTimerFunc() {
 	writeMtx_.unlock();
 
 	QString channel = obj["__channel"].toString();
+	QString type = obj["__type"].toString();
 
 	auto it = commHandlers_.find(channel);
 	if (it == commHandlers_.end()) {
@@ -326,11 +327,15 @@ void CommunicationThread::otherTimerFunc() {
 	bool ret = it.value()->commFunc(this, obj, strErr);//与设备通讯，配置jsonObj
 	if (!ret) {
 
-		QString type = obj["__type"].toString();
 		qDebug()<<"Error channel\t" <<  channel<<"\ttype\t" << type;
 		log(m_deviceAddress, strErr);
 		return;
 		// m_socket->disconnectFromHost();
+	}
+
+	if (type == "start-test") {
+		U65RawData info;
+		emit fireRegularInfo(QVariant::fromValue(info));
 	}
 
 	//设备通讯完毕，通知前端
