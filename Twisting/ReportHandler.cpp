@@ -753,6 +753,10 @@ bool ReportHandler::liveTestingData(const QSqlDatabase& configDb, const QSqlData
 		qint64 sampleTimeUs;
 		double torque;
 		stream >> sampleTimeUs >> torque;
+		QJsonObject object;
+		object["time"] = sampleTimeUs;
+		object["torque"] = torque;
+		array.append(object);
 	}
 	
 
