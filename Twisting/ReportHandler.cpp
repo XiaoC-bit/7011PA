@@ -67,13 +67,9 @@ bool ReportHandler::exportHistoryData(const QSqlDatabase& configDb, const QSqlDa
 		return false;
 	}
 	out.setDevice(&file);
-	out << "CT Number";
-	out << ",";
-	out << "angle";
+	out << "time";
 	out << ",";
 	out << "torque";
-	out << ",";
-	out << "displacement";
 	out << "\n";
 
 	QString strMethod = obj["method"].toString();
@@ -87,7 +83,7 @@ bool ReportHandler::exportHistoryData(const QSqlDatabase& configDb, const QSqlDa
 
 	QSqlQuery testQuery(methodDb);
 
-	QString strSql = QString("select * from detail where queue_id = %1").arg(obj["queue_id"].toInt());
+	QString strSql = QString("select * from queue where id = %1").arg(obj["queue_id"].toInt());
 	if (!testQuery.exec(strSql)) {
 		qDebug() << "Failed to fetch data:";
 		qDebug() << testQuery.lastError().text();
@@ -95,24 +91,18 @@ bool ReportHandler::exportHistoryData(const QSqlDatabase& configDb, const QSqlDa
 	}
 	if (testQuery.next()) {
 		int totalNumber = testQuery.value("totalNumber").toInt();
-		QByteArray data = testQuery.value("data").toByteArray();
-		QDataStream stream(&data, QIODevice::ReadWrite);
+		QByteArray data = testQuery.value("raw_data").toByteArray();
+		QDataStream stream(data);
 		for (int i = 0; i < totalNumber; i++) {
-			float AD1, AD2, YZ_MM, time;
-			int c1, c2;
-			stream >> AD1 >> AD2 >> YZ_MM >> time >> c1 >> c2;
+			qint64 sampleTimeUs;
+			double torque;
+			stream >> sampleTimeUs >> torque;
 
-			out << time;
+			out << sampleTimeUs;
 			out << ",";
-			out << YZ_MM;
-			out << ",";
-			out << AD2;
-			out << ",";
-			out << AD1;
+			out << torque;
 			out << "\n";
 		}
-
-		
 
 	}
 
