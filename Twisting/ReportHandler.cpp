@@ -783,34 +783,13 @@ bool ReportHandler::fetchTestHistoryDetail(const QSqlDatabase& db, const QSqlDat
 	}
 
 	QSqlQuery testQuery(methodDb);
-	size_t total = 0;
-	int mod = 0;
-
-	const int DATA_COUNT = 5000;//保留样本数量
-	std::vector<ExamplePoint> points;
-	QString strSql = QString("select * from detail where queue_id = %1 ;").arg(recvObj["req_queue_id"].toInt());
+	QString strSql = QString("select * from queue where id = %1 ;").arg(recvObj["req_queue_id"].toInt());
 	if (!testQuery.exec(strSql)) {
 		qDebug() << "Failed to fetch data:";
 		qDebug() << testQuery.lastError().text();
 		return false;
 	}
-	if (testQuery.next()) {
-		total = testQuery.value("totalNumber").toInt();
-		QByteArray data = testQuery.value("data").toByteArray();
-		QDataStream stream(&data, QIODevice::ReadWrite);
-		for (size_t i = 0; i < total; i++) {
-			ExamplePoint point;
-			float AD1, AD2, YZ_MM, time;
-			int c1, c2;
-			stream >> AD1 >> AD2 >> YZ_MM >> time >> c1 >> c2;
-			point.AD1 = AD1;
-			point.AD2 = AD2;
-			point.YZ_mm = YZ_MM;
-			point.time = time;
-			points.push_back(point);
-		}
-	}
-	else {
+	if (!testQuery.next()) {
 		QJsonObject jsonObj;
 		jsonObj["__channel"] = channel_ + "-fetch-test-history-detail";
 		jsonObj["status"] = "error";
@@ -819,9 +798,23 @@ bool ReportHandler::fetchTestHistoryDetail(const QSqlDatabase& db, const QSqlDat
 		response = jsonDoc.toJson();
 		return true;
 	}
-	
+
+	size_t total = testQuery.value("totalNumber").toInt();
+	QByteArray data = testQuery.value("raw_data").toByteArray();
 
 	QJsonArray array;
+
+	QDataStream stream(data);
+	for (size_t i = 0; i < total; i++) {
+		qint64 sampleTimeUs;
+		double torque;
+		stream >> sampleTimeUs >> torque;
+		QJsonObject object;
+		object["time"] = sampleTimeUs;
+		object["torque"] = torque;
+		array.append(object);
+	}
+
 	QJsonObject jsonObj;
 	jsonObj["__channel"] = channel_ + "-fetch-test-history-detail";
 	jsonObj["data"] = array;
