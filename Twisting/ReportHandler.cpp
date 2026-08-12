@@ -67,9 +67,11 @@ bool ReportHandler::exportHistoryData(const QSqlDatabase& configDb, const QSqlDa
 		return false;
 	}
 	out.setDevice(&file);
-	out << "time";
+	out.setCodec("UTF-8");
+	out.setGenerateByteOrderMark(true);
+	out << QStringLiteral(u"\u65F6\u95F4");
 	out << ",";
-	out << "torque";
+	out << QStringLiteral(u"\u626D\u77E9");
 	out << "\n";
 
 	QString strMethod = obj["method"].toString();
@@ -97,8 +99,8 @@ bool ReportHandler::exportHistoryData(const QSqlDatabase& configDb, const QSqlDa
 			qint64 sampleTimeUs;
 			double torque;
 			stream >> sampleTimeUs >> torque;
-
-			out << sampleTimeUs;
+			double time = sampleTimeUs / 1000.0;
+			out << time;
 			out << ",";
 			out << torque;
 			out << "\n";
