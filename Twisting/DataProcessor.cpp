@@ -1219,7 +1219,25 @@ void DataProcessor::handleRegularInfo(const QVariant& data) {
 		return;
 	}
 
-	//TODO 这里还要计算平均速度
+	// 计算平均扭矩（梯形法）
+	if (info.datas.size() >= 2) {
+		double integral = 0.0;
+		for (size_t i = 0; i < info.datas.size() - 1; i++) {
+			double t1 = info.datas[i].sampleTimeUs / 1000.0;
+			double t2 = info.datas[i + 1].sampleTimeUs / 1000.0;
+			double y1 = info.datas[i].torque;
+			double y2 = info.datas[i + 1].torque;
+			integral += (t2 - t1) * (y1 + y2) / 2.0;
+		}
+		double totalTime = (info.datas.back().sampleTimeUs - info.datas.front().sampleTimeUs) / 1000.0;
+		if (totalTime > 0.0) {
+			double avgTorque = integral / totalTime;
+			QString strAvgTorque = QString("insert into result(queue_id,name,data) values(%1,'avg_torque',%2)").arg(queueId_).arg(avgTorque);
+			if (!query.exec(strAvgTorque)) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to insert avg_torque:" << query.lastError().text();
+			}
+		}
+	}
 
 	//插入最大速度
 	QString strSql = QString("insert into result(queue_id,name,data) values(%1,'max_speed',%2)").arg(queueId_).arg(info.U65Info.speed);

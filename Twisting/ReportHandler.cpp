@@ -822,43 +822,6 @@ bool ReportHandler::fetchTestHistoryDetail(const QSqlDatabase& db, const QSqlDat
 	
 
 	QJsonArray array;
-
-
-	if (0) {
-		//不过滤
-
-		for (auto& it : points) {
-			QJsonObject object;
-			object["id"] = it.time;
-			object["AD1"] = it.AD1;
-			object["AD2"] = it.AD2;
-			object["YZ_mm"] = it.YZ_mm;
-			array.append(object);
-		}
-	}
-	else {
-		total = points.size();
-		if (total > DATA_COUNT) {
-			total = DATA_COUNT;
-		}
-
-		std::vector<ExamplePoint> outPoints1;
-		std::vector<ExamplePoint> outPoints2;
-		LttbAD2_YZmm::Downsample(points.begin(), points.size(), std::back_inserter(outPoints1), total);
-		LttbAD2_AD1::Downsample(points.begin(), points.size(), std::back_inserter(outPoints2), total);
-
-		auto merged = mergeAndSortPoints(outPoints1, outPoints2, true); // 去重合并
-		for (auto& it : merged) {
-			QJsonObject object;
-			object["id"] = it.time;
-			object["AD1"] = it.AD1;
-			object["AD2"] = it.AD2;
-			object["YZ_mm"] = it.YZ_mm;
-			array.append(object);
-		}
-	}
-
-
 	QJsonObject jsonObj;
 	jsonObj["__channel"] = channel_ + "-fetch-test-history-detail";
 	jsonObj["data"] = array;
@@ -939,6 +902,7 @@ bool ReportHandler::fetchHistoryData(const QSqlDatabase& db, const QSqlDatabase&
 	{
 		QJsonObject jsonQueueObj;
 		jsonQueueObj["key"] = query.value("id").toInt();
+		jsonQueueObj["max_speed"] = query.value("speed").toDouble();
 		jsonQueueObj["specimen_name"] = query.value("specimen_name").toString();
 		jsonQueueObj["batch_number"] = query.value("batch_number").toString();
 		jsonQueueObj["production_date"] = query.value("production_date").toString();
@@ -959,6 +923,7 @@ bool ReportHandler::fetchHistoryData(const QSqlDatabase& db, const QSqlDatabase&
 
 	QJsonArray jsonColumns;
 	jsonColumns.push_back("key");
+	jsonColumns.push_back("max_speed");
 	jsonColumns.push_back("specimen_name");
 	jsonColumns.push_back("batch_number");
 	jsonColumns.push_back("production_date");
