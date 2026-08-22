@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "MsgHandler.h"
 #include <qsqlquery.h>
@@ -16,7 +16,7 @@ public:
 
 private:
 	/**
-	 * ²âÊÔ»­ÃæµÄµ±Ç°Êı¾İ.
+	 * æµ‹è¯•ç”»é¢çš„å½“å‰æ•°æ®.
 	 * 
 	 * \param db
 	 * \param obj
@@ -25,29 +25,30 @@ private:
 	 */
 	[[nodiscard]] bool liveTestingData(const QSqlDatabase& configDb, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
 	
-	//µ¼³öÊı¾İ
+	//å¯¼å‡ºæ•°æ®
 	[[nodiscard]] bool exportData(const QSqlDatabase& configDb, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
 
-	//µ¼³öÀúÊ·Êı¾İ
+	//å¯¼å‡ºå†å²æ•°æ®
 	[[nodiscard]] bool exportHistoryData(const QSqlDatabase& configDb, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
 
-	//É¾³ıÀúÊ·Êı¾İ
+	//åˆ é™¤å†å²æ•°æ®
 	[[nodiscard]] bool deleteHistoryData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
 
-	//ÔÙ¼ÆËã
+	//å†è®¡ç®—
 	[[nodiscard]] bool recalculateHistoryData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
 
-	//²éÑ¯±¨¸æÊı¾İ
+	//æŸ¥è¯¢æŠ¥å‘Šæ•°æ®
 	[[nodiscard]] bool fetchReportData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
 
-	//²éÑ¯ÀúÊ·Êı¾İ
+	//æŸ¥è¯¢å†å²æ•°æ®
 	[[nodiscard]] bool fetchHistoryData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
 
-	//²éÑ¯²âÊÔÏêÇé
+	//æŸ¥è¯¢æµ‹è¯•è¯¦æƒ…
 	[[nodiscard]] bool fetchTestHistoryDetail(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
 
-	//²éÑ¯±¨¸æÀúÊ·Êı¾İ
+	//æŸ¥è¯¢æŠ¥å‘Šå†å²æ•°æ®
 	[[nodiscard]] bool fetchReportHistoryData(const QSqlDatabase& db, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
 
 	void sumupQueue(const QSqlDatabase& db, const QSqlDatabase& dataDb);
 };
+ 
