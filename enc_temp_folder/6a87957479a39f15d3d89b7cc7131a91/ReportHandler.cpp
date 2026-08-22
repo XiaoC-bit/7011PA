@@ -805,33 +805,8 @@ bool ReportHandler::setTimeRange(const QSqlDatabase& configDb, const QSqlDatabas
         }
     }
 
-
-	QSqlQuery updateQuery(dataDb);
-
-	// 计算平均扭矩（梯形法）
-	if (info.datas.size() >= 2) {
-		double integral = 0.0;
-		for (size_t i = 0; i < info.datas.size() - 1; i++) {
-			double t1 = info.datas[i].sampleTimeUs / 1000.0;
-			double t2 = info.datas[i + 1].sampleTimeUs / 1000.0;
-			double y1 = info.datas[i].torque;
-			double y2 = info.datas[i + 1].torque;
-			integral += (t2 - t1) * (y1 + y2) / 2.0;
-		}
-		double totalTime = (info.datas.back().sampleTimeUs - info.datas.front().sampleTimeUs) / 1000.0;
-		if (totalTime > 0.0) {
-
-			double avgTorque = integral / totalTime;
-			QString strAvgTorque = QString("insert into result(queue_id,name,data) values(%1,'avg_torque',%2)").arg(queueId).arg(avgTorque);
-			if (!updateQuery.exec(strAvgTorque)) {
-				qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to insert avg_torque:" << updateQuery.lastError().text();
-			}
-		}
-	}
-
-
-
     //写回过滤后的 raw_data 和 totalNumber
+    QSqlQuery updateQuery(dataDb);
     updateQuery.prepare("UPDATE queue SET raw_data = :raw, totalNumber = :total WHERE id = :id");
     updateQuery.bindValue(":raw", QVariant(newBlobData));
     updateQuery.bindValue(":total", static_cast<int>(newTotal));

@@ -24,7 +24,10 @@ private:
 	 * \return 
 	 */
 	[[nodiscard]] bool liveTestingData(const QSqlDatabase& configDb, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
-	
+
+	//设置时间范围，按 start_time/end_time 过滤当前队列的 raw_data 并写回
+	[[nodiscard]] bool setTimeRange(const QSqlDatabase& configDb, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
+
 	//导出数据
 	[[nodiscard]] bool exportData(const QSqlDatabase& configDb, const QSqlDatabase& dataDb, const QJsonObject& obj, QString& response);
 

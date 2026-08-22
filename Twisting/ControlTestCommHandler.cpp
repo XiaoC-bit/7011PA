@@ -1329,11 +1329,20 @@ bool ControlTestCommHandler::readData(CommunicationThread* socket, QString& err)
         return false;
     }
 
-    int32_t Hex32 = (recvData[12 + 0x3c] & 0xff) +
+    int32_t Hex32;
+
+    Hex32 = (recvData[12 + 0x30] & 0xff) +
+        (recvData[12 + 0x31] & 0xff) * 0x100 +
+        (recvData[12 + 0x32] & 0xff) * 0x10000 +
+        (recvData[12 + 0x33] & 0xff) * 0x1000000;
+    float *pHex32 = (float*)&Hex32;
+
+    Hex32 = (recvData[12 + 0x3c] & 0xff) +
         (recvData[12 + 0x3d] & 0xff) * 0x100 +
         (recvData[12 + 0x3e] & 0xff) * 0x10000 +
         (recvData[12 + 0x3f] & 0xff) * 0x1000000;
-    float* pHex32 = (float*)&Hex32;
+
+
     testingRawdata_.torque = *pHex32;//扭转机  轴向位移
     return true;
 }
