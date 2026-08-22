@@ -344,7 +344,7 @@ bool TestingHandler::transferMethodPreHandle(const QSqlDatabase& configDb, const
 bool TestingHandler::prepareTest(const QSqlDatabase& configDb, const QSqlDatabase& testDb, QJsonObject& recvObj, QString& response) {
     double targetAngle = recvObj.contains("targetAngle") ? recvObj["targetAngle"].toDouble() : 0.0143;// obj["targetAngle"].toDouble();
 
-    QString strSql = QString("select id from method_config where is_current = 1");
+    QString strSql = QString("select id,angle_tolerance from method_config where is_current = 1");
     QSqlQuery configQuery(configDb);
     QSqlQuery testQuery(testDb);
     if (!configQuery.exec(strSql))
@@ -354,9 +354,11 @@ bool TestingHandler::prepareTest(const QSqlDatabase& configDb, const QSqlDatabas
         return false;
     }
     int methodId = 0;
+    double angleTolerance = 0.0;
     if (configQuery.next())
     {
         methodId = configQuery.value("id").toInt();
+        angleTolerance = configQuery.value("angle_tolerance").toDouble();
     }
 
 
@@ -377,6 +379,7 @@ bool TestingHandler::prepareTest(const QSqlDatabase& configDb, const QSqlDatabas
     }
 
     recvObj["__channel"] = "control-message";
+    recvObj["angleTolerance"] = angleTolerance;
     //recvObj["queue_id"] = lastId;
 
     return true;

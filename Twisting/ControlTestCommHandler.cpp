@@ -1804,80 +1804,88 @@ bool ControlTestCommHandler::reSpin(CommunicationThread* socket, QJsonObject& ob
 //与设定角度比较：偏小则 moveup(spin)，偏大则 movedown(reSpin)
 //每次只移动一点，并循环"移动->读取->判断"直到 |实际-设定| <= 阈值
 bool ControlTestCommHandler::prepareTest(CommunicationThread* socket, QJsonObject& obj, QString& err) {
-	double targetAngle = obj.contains("targetAngle") ? obj["targetAngle"].toDouble() : 0.0143;// obj["targetAngle"].toDouble();
-	double threshold = obj.contains("threshold") ? obj["threshold"].toDouble() : 0.00005;
-	const int maxIterations = 5000; //安全限制，防止异常时死循环
+    double targetAngle = obj.contains("targetAngle") ? obj["targetAngle"].toDouble() : 0.0143;
+    double threshold = obj.contains("angleTolerance") ? obj["angleTolerance"].toDouble() : 0.00005;
+    const int maxIterations = 5000; //安全限制，防止异常时死循环
 
-	//移动速度应该远离设定角度时用更快(500)，接近时用更小 minSpeed
-	const double maxSpeed = 400.0;
-	const double minSpeed = 10.0;
-	double firstAbsDiff = -1.0; //首次返回的|diff|，作为减速基准
-	bool converged = false; //是否已达到阈值
+    //分段变速：远距离保持高速平台，中距离衰减，近距离用较高的下限速度
+    const double maxSpeed = 400.0;
+    const double minSpeed = 30.0;      // 提高下限，避免末端蠕行耗时过长
+    const double fastZoneRatio = 0.5;  // ratio > 此值时，保持maxSpeed不衰减（远距离平台期）
+    bool converged = false; //是否已达到阈值
 
-	for (int i = 0; i < maxIterations; i++) {
-		//读取当前角度（4字节，地址 0x0934，0x0900 + 0x34）为 float 类型
-		int32_t Hex32 = 0;
-		if (!readInt32(socket, 0x0934, Hex32, err)) {
-			break;
-		}
-		float currentAngle = *reinterpret_cast<float*>(&Hex32);
-		qDebug() << "prepareTest current:" << currentAngle << "target:" << targetAngle;
+    for (int i = 0; i < maxIterations; i++) {
+        //读取当前角度（4字节，地址 0x0934，0x0900 + 0x34）为 float 类型
+        int32_t Hex32 = 0;
+        if (!readInt32(socket, 0x0934, Hex32, err)) {
+            break;
+        }
+        float currentAngle = *reinterpret_cast<float*>(&Hex32);
+        qDebug() << "Iterations[" << i << "]   prepareTest current:" << currentAngle << "target:" << targetAngle;
 
-		double diff = currentAngle - targetAngle;
-		double absDiff = qAbs(diff);
-		if (absDiff <= threshold) {
-			converged = true; //达到阈值，停止
-			break;
-		}
+        double diff = currentAngle - targetAngle;
+        double absDiff = qAbs(diff);
+        if (absDiff <= threshold) {
+            converged = true; //达到阈值，停止
+            break;
+        }
 
-		//首次记录基准|diff|，用于按比例减速
-		if (firstAbsDiff < 0) {
-			firstAbsDiff = absDiff;
-		}
-		//按接近程度逐渐减小速度，远时用 maxSpeed，接近时用 minSpeed
-		double ratio = firstAbsDiff > 0 ? (absDiff / firstAbsDiff) : 1.0;
-		double speed = minSpeed + (maxSpeed - minSpeed) * ratio;
-		if (speed > maxSpeed) speed = maxSpeed;
-		if (speed < minSpeed) speed = minSpeed;
-		qDebug() << "prepareTest absDiff:" << absDiff << "speed:" << speed;
+        //按到目标的绝对距离直接分段定速度，不再依赖"首次absDiff"作为基准
+        //这样即使起点距离不同，衰减曲线也稳定、可预期
+        double speed;
+        if (absDiff > 0.02) {
+            speed = maxSpeed;                    // 远距离：全速平台期
+        }
+        else if (absDiff > 0.001) {
+            // 中距离：在 [0.001, 0.02] 区间用非线性(平方根)插值衰减
+            // 平方根曲线让速度在中段下降更快，避免线性曲线"前段太慢降"
+            double ratio = (absDiff - 0.001) / (0.02 - 0.001); // 0~1
+            double curved = sqrt(ratio); // 让衰减在中前段更快，末段更平滑
+            speed = minSpeed + (maxSpeed - minSpeed) * curved;
+        }
+        else {
+            speed = minSpeed;                    // 近距离：固定较高下限速度，避免蠕行
+        }
+        if (speed > maxSpeed) speed = maxSpeed;
+        if (speed < minSpeed) speed = minSpeed;
+        qDebug() << "Iterations[" << i << "]   prepareTest absDiff:" << absDiff << "speed:" << speed;
 
-		//写入移动速度
-		if (!writeFloat(socket, 0x1108, static_cast<float>(speed), err)) {
-			break;
-		}
+        //写入移动速度
+        if (!writeFloat(socket, 0x1108, static_cast<float>(speed), err)) {
+            break;
+        }
 
-		//当前角度比设定角度小 -> moveup(spin)，偏大 -> movedown(reSpin)
-		QJsonObject dummy;
-		bool moveOk = false;
-		if (diff < 0) {
-			moveOk = spin(socket, dummy, err);
-		}
-		else {
-			moveOk = reSpin(socket, dummy, err);
-		}
-		if (!moveOk) {
-			break;
-		}
+        //当前角度比设定角度小 -> moveup(spin)，偏大 -> movedown(reSpin)
+        QJsonObject dummy;
+        bool moveOk = false;
+        if (diff < 0) {
+            moveOk = spin(socket, dummy, err);
+        }
+        else {
+            moveOk = reSpin(socket, dummy, err);
+        }
+        if (!moveOk) {
+            break;
+        }
 
-		QThread::msleep(500); //等待电机移动一小段后再读取
-	}
+        QThread::msleep(300); //等待电机移动一小段后再读取（保持不变）
+    }
 
-	if (!converged && err.isEmpty()) {
-		err = "prepareTest exceeded max iterations";
-	}
+    if (!converged && err.isEmpty()) {
+        err = "prepareTest exceeded max iterations";
+    }
 
     QJsonObject dummy;
-	stop(socket, dummy, err); //停止移动，防止电机继续移动
+    stop(socket, dummy, err); //停止移动，防止电机继续移动
 
-	//接口结束时恢复移动速度到500，失败不覆盖已有错误写入
-	QString restoreErr;
-	if (!writeFloat(socket, 0x1108, 500.0f, restoreErr) && err.isEmpty()) {
-		err = restoreErr;
-	}
+    //接口结束时恢复移动速度到500，失败不覆盖已有错误写入
+    QString restoreErr;
+    if (!writeFloat(socket, 0x1108, 500.0f, restoreErr) && err.isEmpty()) {
+        err = restoreErr;
+    }
 
-	return converged;
+    return converged;
 }
-
 //夹持
 bool ControlTestCommHandler::grip(CommunicationThread* socket, QJsonObject& obj, QString& err) {
 	QByteArray buffer;

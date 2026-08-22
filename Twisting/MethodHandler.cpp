@@ -1129,6 +1129,14 @@ bool MethodHandler::handleWsMsg(QJsonObject &recvObj, QString &response)
     {
         return fetchSerialPorts(db, recvObj, response);
     }
+    if (type == "fetchAngleTolerance")
+    {
+        return fetchAngleTolerance(db, recvObj, response);
+    }
+    if (type == "updateAngleTolerance")
+    {
+        return updateAngleTolerance(db, recvObj, response);
+    }
 
     if (type == "addData")
     {
@@ -1239,5 +1247,84 @@ bool MethodHandler::updateModbusSerialPort(const QSqlDatabase& db, QJsonObject& 
     response = jsonDoc.toJson();
     return true;
 
+    return true;
+}
+
+
+
+bool MethodHandler::fetchAngleTolerance(const QSqlDatabase& db, const QJsonObject& recvObj, QString& response)
+{
+
+    double currentAngleTolerance = 0.0;
+    QSqlQuery query(db);
+    QString strSql = QString("select angle_tolerance from method_config where is_current = 1");
+    if (query.exec(strSql))
+    {
+        if (query.next())
+        {
+            currentAngleTolerance = query.value("angle_tolerance").toDouble();
+        }
+    }
+    else
+    {
+        qDebug() << "Failed to fetch angle_tolerance:";
+        qDebug() << query.lastError().text();
+    }
+
+    QJsonObject jsonObj;
+    jsonObj["__channel"] = channel_ + "-fetchAngleTolerance";
+    jsonObj["status"] = "success";
+    jsonObj["angleTolerance"] = currentAngleTolerance;
+
+    QJsonDocument jsonDoc(jsonObj);
+    response = jsonDoc.toJson();
+    return true;
+}
+
+bool MethodHandler::updateAngleTolerance(const QSqlDatabase& db, QJsonObject& recvObj, QString& response)
+{
+    double angleTolerance = recvObj.contains("angleTolerance") ? recvObj["angleTolerance"].toDouble() : 0.0;
+    if (angleTolerance <= 0.0)
+    {
+        qDebug() << "angleTolerance must be greater than 0.0";
+        return false;
+    }   
+   QString strSql = QString("select id from method_config where is_current = 1");
+    QSqlQuery query(db);
+    if (!query.exec(strSql))
+    {
+        qDebug() << "Failed to fetch data:";
+        qDebug() << query.lastError().text();
+        return false;
+    }
+    int methodId = 0;
+    if (query.next())
+    {
+        methodId = query.value("id").toInt();
+    }
+
+    strSql = QString("UPDATE method_config SET angle_tolerance = %1 \
+        where id = %2\
+        ")
+        .arg(angleTolerance)
+        .arg(methodId)
+        ;
+
+if (!query.exec(strSql))
+{
+    qDebug() << "Failed to fetch data:";
+    qDebug() << query.lastError().text();
+    return false;
+}
+
+  
+    
+
+    QJsonObject jsonObj;
+    jsonObj["__channel"] = channel_ + "-updateAngleTolerance";
+
+    jsonObj["status"] = "success";
+    QJsonDocument jsonDoc(jsonObj);
+    response = jsonDoc.toJson();
     return true;
 }

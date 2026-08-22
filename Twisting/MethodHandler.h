@@ -28,5 +28,11 @@ private:
 
 	//更新当前方法的modbus串口号
 	[[nodiscard]] bool updateModbusSerialPort(const QSqlDatabase& db, QJsonObject& recvObj, QString& response);
+
+	
+	//获取系统配置的角度容差
+	[[nodiscard]] bool fetchAngleTolerance(const QSqlDatabase& db, const QJsonObject& obj, QString& response);
+	//更新系统配置的角度容差
+	[[nodiscard]] bool updateAngleTolerance(const QSqlDatabase& db, QJsonObject& recvObj, QString& response);
 };
  

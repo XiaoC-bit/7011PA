@@ -271,9 +271,9 @@ void CommunicationThread::useRealTime(bool use) {
 
 void CommunicationThread::handleWsRequest(const QJsonObject& obj) {
 	QString channel = obj["__channel"].toString();
-	qDebug() << channel;
+	/*qDebug() << channel;
 	qDebug()<< obj["__type"].toString();
-	qDebug() << ip();
+	qDebug() << ip();*/
 	if (channel == "control-comm-system") {
 		ctrlMtx_.lock();
 		commCtrlQueue_.push_back(obj);
