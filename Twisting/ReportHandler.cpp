@@ -794,6 +794,10 @@ bool ReportHandler::setTimeRange(const QSqlDatabase& configDb, const QSqlDatabas
     QDataStream outStream(&newBlobData, QIODevice::WriteOnly);
     size_t newTotal = 0;
 
+    //收集过滤后的数据点，用于重新计算平均扭矩
+    struct FilteredPoint { qint64 sampleTimeUs; double torque; };
+    std::vector<FilteredPoint> filteredDatas;
+
     QDataStream stream(data);
     for (size_t i = 0; i < total; i++) {
         qint64 sampleTimeUs;
@@ -801,6 +805,7 @@ bool ReportHandler::setTimeRange(const QSqlDatabase& configDb, const QSqlDatabas
         stream >> sampleTimeUs >> torque;
         if (sampleTimeUs >= startTime && sampleTimeUs <= endTime) {
             outStream << sampleTimeUs << torque;
+            filteredDatas.push_back({ sampleTimeUs, torque });
             newTotal++;
         }
     }
@@ -808,20 +813,24 @@ bool ReportHandler::setTimeRange(const QSqlDatabase& configDb, const QSqlDatabas
 
 	QSqlQuery updateQuery(dataDb);
 
-	// 计算平均扭矩（梯形法）
-	if (info.datas.size() >= 2) {
+	// 重新选择范围后，基于过滤后的数据重新计算平均扭矩（梯形法）
+	if (filteredDatas.size() >= 2) {
 		double integral = 0.0;
-		for (size_t i = 0; i < info.datas.size() - 1; i++) {
-			double t1 = info.datas[i].sampleTimeUs / 1000.0;
-			double t2 = info.datas[i + 1].sampleTimeUs / 1000.0;
-			double y1 = info.datas[i].torque;
-			double y2 = info.datas[i + 1].torque;
+		for (size_t i = 0; i < filteredDatas.size() - 1; i++) {
+			double t1 = filteredDatas[i].sampleTimeUs / 1000.0;
+			double t2 = filteredDatas[i + 1].sampleTimeUs / 1000.0;
+			double y1 = filteredDatas[i].torque;
+			double y2 = filteredDatas[i + 1].torque;
 			integral += (t2 - t1) * (y1 + y2) / 2.0;
 		}
-		double totalTime = (info.datas.back().sampleTimeUs - info.datas.front().sampleTimeUs) / 1000.0;
+		double totalTime = (filteredDatas.back().sampleTimeUs - filteredDatas.front().sampleTimeUs) / 1000.0;
 		if (totalTime > 0.0) {
-
 			double avgTorque = integral / totalTime;
+			//先删除旧的 avg_torque，再插入重新计算后的值，避免重复
+			QString strDel = QString("delete from result where queue_id = %1 and name = 'avg_torque'").arg(queueId);
+			if (!updateQuery.exec(strDel)) {
+				qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to delete old avg_torque:" << updateQuery.lastError().text();
+			}
 			QString strAvgTorque = QString("insert into result(queue_id,name,data) values(%1,'avg_torque',%2)").arg(queueId).arg(avgTorque);
 			if (!updateQuery.exec(strAvgTorque)) {
 				qDebug() << "deviceId :  " << deviceId_ << "\t" << "Failed to insert avg_torque:" << updateQuery.lastError().text();
